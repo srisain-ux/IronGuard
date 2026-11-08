@@ -1,13 +1,13 @@
 # Replace @handles with your GitHub usernames. Branch protection: require code-owner review.
-/ml/                    @MEMBER_A
-/data/seed/             @MEMBER_A
-/data/test_human/       @MEMBER_A
-/docs/MODEL_SPEC.md     @MEMBER_A
-/api/                   @MEMBER_B
-/contracts/             @MEMBER_B @MEMBER_A @MEMBER_C
-/data/generated/        @MEMBER_B
-/scripts/               @MEMBER_B
-/web/                   @MEMBER_C
-/bridge/                @MEMBER_C
-/docs/THEME.md          @MEMBER_C
-/docs/pitch/            @MEMBER_C
+/ml/                    @Amohash
+/data/seed/             @Amohash
+/data/test_human/       @Amohash
+/docs/MODEL_SPEC.md     @Amohash
+/api/                   @srisain-ux
+/contracts/             @srisain-ux @Amohash @Jeffjone
+/data/generated/        @srisain-ux
+/scripts/               @srisain-ux
+/web/                   @Jeffjone
+/bridge/                @Jeffjone
+/docs/THEME.md          @Jeffjone
+/docs/pitch/            @Jeffjone
