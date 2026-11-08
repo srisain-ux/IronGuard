@@ -1,0 +1,341 @@
+/* Retained P0 Reef shell; /phone owns its own layout. */
+.reef-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  font: 10px var(--zd-font-mono);
+  color: var(--zd-teal);
+  text-decoration: none;
+}
+.reef-shell nav {
+  display: flex;
+  gap: 8px;
+}
+.reef-shell .page-content {
+  max-width: 1300px;
+  margin: auto;
+  padding: 40px 30px 70px;
+  position: relative;
+  z-index: 1;
+}
+.reef-shell .intro {
+  padding: 0;
+  max-width: 630px;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--zd-text-dim);
+  margin: 27px 0 34px;
+}
+.reef-shell .panel-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font: 600 10px var(--zd-font-mono);
+  letter-spacing: 0.1em;
+}
+.reef-shell .reef-heading h1 {
+  max-width: 800px;
+  font-size: clamp(40px, 5.6vw, 82px);
+  text-shadow: 0 5px 30px rgba(0, 0, 0, 0.65);
+}
+.reef-shell h1 em {
+  color: var(--zd-neon-soft);
+  font-style: normal;
+  text-shadow: var(--zd-glow-neon);
+}
+.reef-shell .intro {
+  max-width: 630px;
+  font-size: clamp(16px, 1.45vw, 19px);
+  line-height: 1.65;
+  color: #ded8e9;
+  margin: 27px 0 34px;
+}
+.reef-shell .kill-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  font: 600 11px var(--zd-font-mono);
+  letter-spacing: 0.06em;
+}
+.reef-shell .kill-chain span {
+  border: 1px solid rgba(185, 162, 207, 0.35);
+  border-radius: 5px;
+  padding: 9px;
+  background: rgba(20, 12, 49, 0.72);
+}
+.reef-shell .kill-chain .current-stage {
+  color: var(--zd-teal);
+  border-color: var(--zd-teal);
+  box-shadow: var(--zd-glow-teal);
+}
+.reef-shell .feature-list {
+  display: grid;
+  gap: 18px;
+  margin-top: 48px;
+  max-width: 590px;
+}
+.reef-shell .feature-list div {
+  border-top: 1px solid rgba(185, 162, 207, 0.28);
+  padding-top: 14px;
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 12px;
+}
+.reef-shell .feature-list strong {
+  color: var(--zd-neon-soft);
+  font: 600 11px var(--zd-font-mono);
+  letter-spacing: 0.08em;
+}
+.reef-shell .feature-list span {
+  color: #ddd7e8;
+  font-size: 13px;
+}
+.reef-shell .phone-frame {
+  position: relative;
+  width: min(100%, 405px);
+  min-height: 650px;
+  margin: 0 auto;
+  border: 8px solid #141025;
+  border-radius: 42px;
+  background: #100c28;
+  box-shadow:
+    0 0 0 2px #6a548d,
+    0 28px 100px rgba(0, 0, 0, 0.7),
+    0 0 100px rgba(232, 63, 143, 0.22);
+  overflow: hidden;
+  padding: 13px 17px 19px;
+}
+.reef-shell .phone-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 21px;
+  border-radius: 0 0 16px 16px;
+  background: #141025;
+}
+.reef-shell .phone-top {
+  display: flex;
+  justify-content: space-between;
+  font: 600 12px var(--zd-font-mono);
+  padding: 0 8px 20px;
+}
+.reef-shell .thread-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0 18px;
+  border-bottom: 1px solid rgba(185, 162, 207, 0.2);
+}
+.reef-shell .thread-head .avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #514d75;
+  display: grid;
+  place-items: center;
+  font: 700 20px var(--zd-font-display);
+}
+.reef-shell .thread-head strong {
+  display: block;
+  font: 600 12px var(--zd-font-mono);
+  letter-spacing: 0.07em;
+}
+.reef-shell .thread-head small {
+  display: block;
+  color: var(--zd-mist);
+  font-size: 11px;
+  margin-top: 3px;
+}
+.reef-shell .thread-more {
+  margin-left: auto;
+  color: var(--zd-mist);
+}
+.reef-shell .thread-body {
+  min-height: 232px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 19px 0 17px;
+}
+.reef-shell .bubble {
+  max-width: 87%;
+  padding: 10px 13px;
+  border-radius: 15px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.reef-shell .bubble-them {
+  align-self: flex-start;
+  background: #302a50;
+  border-bottom-left-radius: 3px;
+}
+.reef-shell .bubble-me {
+  align-self: flex-end;
+  background: #644188;
+  border-bottom-right-radius: 3px;
+}
+.reef-shell .forecast-card {
+  padding: 14px;
+  border-color: rgba(232, 63, 143, 0.55);
+  box-shadow: 0 0 25px rgba(232, 63, 143, 0.12);
+}
+.reef-shell .card-top,
+.panel-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font: 600 10px var(--zd-font-mono);
+  letter-spacing: 0.1em;
+  color: var(--zd-teal);
+}
+.reef-shell .live-dot {
+  color: var(--zd-neon-soft);
+}
+.reef-shell .risk-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin: 16px 0 9px;
+}
+.reef-shell .risk-row small {
+  display: block;
+  color: var(--zd-mist);
+  font: 10px var(--zd-font-mono);
+}
+.reef-shell .risk-row strong {
+  font: 900 39px var(--zd-font-display);
+  color: var(--zd-cream);
+}
+.reef-shell .band {
+  font: 600 10px var(--zd-font-mono);
+  color: var(--zd-podium);
+  padding: 6px 8px;
+  border: 1px solid var(--zd-podium);
+  border-radius: 5px;
+}
+.reef-shell .risk-track {
+  height: 6px;
+  background: #332946;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.reef-shell .risk-track div {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--zd-teal),
+    var(--zd-podium),
+    var(--zd-neon)
+  );
+}
+.reef-shell .trajectory {
+  font: 11px/1.6 var(--zd-font-mono);
+  margin: 12px 0 7px;
+  color: var(--zd-neon-soft);
+}
+.reef-shell .trajectory strong {
+  color: var(--zd-cream);
+}
+.reef-shell .explanation {
+  font-size: 11px;
+  line-height: 1.45;
+  color: #e4def0;
+  margin: 0;
+}
+.reef-shell .composer {
+  border: 1px solid rgba(185, 162, 207, 0.4);
+  color: var(--zd-mist);
+  border-radius: 20px;
+  padding: 8px 13px;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+}
+.reef-shell .reef-heading {
+  padding: 35px 0 26px;
+}
+.reef-shell .reef-heading h1 {
+  max-width: 950px;
+  font-size: clamp(38px, 5.1vw, 70px);
+}
+.reef-shell .reef-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 19px;
+}
+.reef-shell .reef-grid > section {
+  min-height: 245px;
+  padding: 21px;
+}
+.reef-shell .panel-label {
+  color: var(--zd-cream);
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(185, 162, 207, 0.26);
+}
+.reef-shell .panel-label small {
+  color: var(--zd-mist);
+  font-size: 9px;
+}
+.reef-shell .terminal .panel-label span {
+  color: var(--zd-chloro);
+}
+.reef-shell .terminal-content {
+  font: 13px/1.8 var(--zd-font-mono);
+}
+.reef-shell .terminal-content p span {
+  color: var(--zd-chloro);
+}
+.reef-shell .terminal-content i {
+  color: var(--zd-neon);
+}
+.reef-shell .terminal-empty {
+  padding: 30px 14px;
+  color: var(--zd-mist);
+  border: 1px dashed rgba(185, 162, 207, 0.3);
+  border-radius: 8px;
+}
+.reef-shell .chart-empty {
+  height: 250px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  color: var(--zd-cream);
+  font: 900 50px var(--zd-font-display);
+}
+.reef-shell .chart-empty small {
+  display: block;
+  font: 12px var(--zd-font-mono);
+  color: var(--zd-mist);
+  margin-top: 12px;
+}
+.reef-shell .stat-panel strong {
+  display: block;
+  margin-top: 21px;
+  font: 900 61px var(--zd-font-display);
+  color: var(--zd-teal);
+}
+.reef-shell .stat-panel p {
+  color: var(--zd-mist);
+  font-size: 13px;
+}
+
+@media (max-width: 820px) {
+  .reef-shell .reef-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 580px) {
+  .reef-shell .site-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .reef-shell .page-content {
+    padding: 20px 18px 50px;
+  }
+}

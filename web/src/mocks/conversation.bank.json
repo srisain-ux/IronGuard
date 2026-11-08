@@ -1,0 +1,31 @@
+{
+  "id": "demo_bank_0001",
+  "family": "bank_impersonation",
+  "channel": "sms",
+  "strike_turn": 3,
+  "source": {
+    "generator": "human"
+  },
+  "turns": [
+    {
+      "sender": "them",
+      "text": "PNC fraud team: unusual activity was detected on your account.",
+      "stage": "bait"
+    },
+    {
+      "sender": "me",
+      "text": "What happened? I have my card with me.",
+      "stage": "bait"
+    },
+    {
+      "sender": "them",
+      "text": "Your account may be frozen. Our security team needs to verify you immediately.",
+      "stage": "hook"
+    },
+    {
+      "sender": "them",
+      "text": "Call +1-888-555-0199 or visit https://pnc-secure.example to confirm your one-time code.",
+      "stage": "strike"
+    }
+  ]
+}
