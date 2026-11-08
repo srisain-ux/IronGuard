@@ -5,8 +5,8 @@
 
 ## Now
 - Phase: P1
-- Working on: `/phone` mock demo and Photon echo shipped on `c/phone-hud`; awaiting live phone test.
-- Blocked by: Photon webhook registration/secret and a user-sent test text are still required for end-to-end confirmation.
+- Working on: `/phone` mock demo and Photon echo shipped on `c/phone-hud`; web, bridge and tunnel running for the user's phone test.
+- Blocked by: Only receipt on the physical phone remains unverified. Photon Beta destination/secret are configured and public health/signature checks pass.
 
 ## Log
 - 
@@ -18,8 +18,15 @@
 <!-- e.g. - [ ] @B contracts/score_response: add optional field `latency_ms` (number). Why: HUD shows it. -->
 - [ ] @B `scripts/doctor.sh`: detect actual Ponytail/ECC skill/plugin entry points instead of matching any `ponytail`/`ecc` text under `.codex`; doctor reported installed but neither callable review skill was present.
 - [ ] @B add `contracts/examples/conversation.bank_impersonation.json` and per-prefix bank/benign score examples. Current web bank/prefix fixtures live only in `web/src/mocks/`, are schema-valid and explicitly scripted; replace these with shared examples when available.
+- [ ] @B update `.env.example` and `docs/PROMPTS.md` Photon setup: signup at Photon Beta produces `pho_prj_` project IDs and Bearer API keys, incompatible with Spectrum Basic auth. The bridge now detects Beta projects and uses the existing `PHOTON_SECRET` for the Beta API key; Beta uses `whsec_` Standard Webhooks secrets and an assigned sender-specific iMessage line. Keep root env names consistent; no root files changed here.
 
 ## Handoffs (things I've shipped that others can now use)
 <!-- e.g. - [x] ml/artifacts/preynet.onnx v2 (features output = 640-d) merged in M2 -->
 - [x] P1 web: `VITE_USE_MOCKS=1 make web` → `http://localhost:5173/phone`; `web/src/demo.ts` exports `demos`, `Score`, `safetyCard(id, score)`; `web/src/compass.tsx` exports `Compass({score})` using `contracts/taxonomy.json` angles. `web/README.md` documents the local demo and runtime limits. All displayed forecasts are fixtures, not evaluation results.
 - [x] P1 Photon: `make bridge`, `make tunnel`, register `<tunnel-https-url>/webhook`, save `PHOTON_WEBHOOK_SECRET` in this worktree's ignored `bridge/.env`, restart bridge, then text the project number. `bridge/src/server.ts` exports `ONLINE`, `echoHandler`, `bridgeServer`; `bridge/README.md` gives exact setup and safe debugging by health/webhook status. Echo is `IronGuard online 🛡`; no API required, including with `MOCK_API=1`.
+
+## Photon setup follow-up
+- [02:19][P1] User asked the agent to run the whole connection setup. Started bridge/tunnel and found saved credentials belong to Photon Beta (2.0), while the original bridge used Stable Spectrum. Stable rejected the new project-ID format (422); Beta authenticated successfully. Added `bridge/src/beta.ts` without changing dependencies, retained the pinned Spectrum path, verified Standard Webhooks HMAC/freshness, routed only valid project-matched human-to-agent direct received messages, and sent replies through the Beta message API with per-message idempotency. Health exposes only counters and API type. Updated `bridge/README.md`. Feature commit `63cac15`.
+- [02:19][P1] Registered the existing project's destination through the Beta API (201), subscribed to `message.received`, payload version `2026-07-01`; saved the returned secret directly into this worktree's ignored `bridge/.env` with mode 0600, never displayed it. No line purchase/assignment or credential rotation. Destination `pho_whd_01m6x3ntgjfk08a15rp3padw4m`; URL `https://hub-initiated-beautifully-ips.trycloudflare.com/webhook`. Public `/health` reports ready; signed no-op request returns 204, invalid signature returns 401; API confirms enabled destination. No real customer text used in smoke checks.
+- [02:19][P1] Validation: `make validate check-web check-bridge`, all 8 bridge tests (4 Beta, 4 Spectrum/server), staged whitespace and ownership guard passed. Direct correctness/privacy/contract and bloat review completed; Ponytail/ECC skill availability remains as recorded above. Tests cover tampering, timestamp freshness/rotation, project/channel/identity checks, stable send IDs, duplicate delivery and safe send failures. Only C-owned paths touched. | skipped: physical device actions, inaccessible review skills, full model/API integration | unverified: phone receipt. At the last health check no phone event had arrived yet. User instructed to send `test` as blue-bubble iMessage to the already assigned Photon number. Do not claim the physical round trip succeeded until confirmed.
+- [02:19][P1] Handoff: `betaTransport` in `bridge/src/beta.ts`; `WebhookTransport`, `EchoSpace`, `EchoMessage` in `bridge/src/server.ts`; existing `PHOTON_PROJECT_ID`, `PHOTON_SECRET` (Beta API key), `PHOTON_WEBHOOK_SECRET` (destination secret). Retained exec sessions: bridge 97473, tunnel 24435; these are intentionally left running at the user's request. Mock web restarted on 5173. A tunnel restart changes its URL; re-register with a stable idempotency key and save the new signing secret before restarting bridge. Root checkout's ignored `.env` was not modified.
