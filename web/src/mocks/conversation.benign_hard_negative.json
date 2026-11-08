@@ -1,0 +1,8 @@
+{"id":"ex_bn_0001","family":"benign","channel":"imessage","hard_negative":true,
+ "turns":[
+  {"sender":"them","text":"Hey, are we still on for golf tomorrow at 9?","stage":"benign"},
+  {"sender":"me","text":"Wrong number I think!","stage":"benign"},
+  {"sender":"them","text":"Ah sorry about that, have a good night","stage":"benign"}
+ ],
+ "strike_turn":null,"split":"train",
+ "source":{"generator":"nemotron","model":"nvidia/nemotron-3-nano-30b-a3b","prompt_id":"gen_v1","seed":8}}

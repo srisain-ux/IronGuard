@@ -1,0 +1,279 @@
+[
+  {
+    "risk": 0.26,
+    "confidence_band": "low",
+    "family": {
+      "id": "pig_butchering",
+      "label": "Relationship / crypto (pig butchering)",
+      "p": 0.2392,
+      "source": "base"
+    },
+    "family_probs": {
+      "benign": 0.74,
+      "pig_butchering": 0.2392,
+      "bank_impersonation": 0.00416,
+      "family_emergency": 0.00416,
+      "job_task": 0.00416,
+      "toll_delivery": 0.00416,
+      "carrier_support": 0.00416
+    },
+    "next_stage": {
+      "stage": "bait",
+      "p": 0.61
+    },
+    "turns_to_strike": {
+      "bucket": "3+",
+      "p": 0.47
+    },
+    "locked": false,
+    "attention": [
+      1
+    ],
+    "evidence": [
+      {
+        "turn_idx": 0,
+        "reason": "An unfamiliar sender. Wait for more context."
+      }
+    ],
+    "chloroplast_hits": [],
+    "model": {
+      "name": "stub",
+      "version": "scripted-demo-v1",
+      "runtime": "browser"
+    }
+  },
+  {
+    "risk": 0.26,
+    "confidence_band": "low",
+    "family": {
+      "id": "pig_butchering",
+      "label": "Relationship / crypto (pig butchering)",
+      "p": 0.2392,
+      "source": "base"
+    },
+    "family_probs": {
+      "benign": 0.74,
+      "pig_butchering": 0.2392,
+      "bank_impersonation": 0.00416,
+      "family_emergency": 0.00416,
+      "job_task": 0.00416,
+      "toll_delivery": 0.00416,
+      "carrier_support": 0.00416
+    },
+    "next_stage": {
+      "stage": "pivot",
+      "p": 0.61
+    },
+    "turns_to_strike": {
+      "bucket": "3+",
+      "p": 0.47
+    },
+    "locked": false,
+    "attention": [
+      0.75,
+      0.25
+    ],
+    "evidence": [
+      {
+        "turn_idx": 0,
+        "reason": "An unfamiliar sender. Wait for more context."
+      }
+    ],
+    "chloroplast_hits": [],
+    "model": {
+      "name": "stub",
+      "version": "scripted-demo-v1",
+      "runtime": "browser"
+    }
+  },
+  {
+    "risk": 0.74,
+    "confidence_band": "uncertain",
+    "family": {
+      "id": "pig_butchering",
+      "label": "Relationship / crypto (pig butchering)",
+      "p": 0.68,
+      "source": "base"
+    },
+    "family_probs": {
+      "benign": 0.26,
+      "pig_butchering": 0.68,
+      "bank_impersonation": 0.01,
+      "family_emergency": 0.02,
+      "job_task": 0.01,
+      "toll_delivery": 0.01,
+      "carrier_support": 0.01
+    },
+    "next_stage": {
+      "stage": "hook",
+      "p": 0.61
+    },
+    "turns_to_strike": {
+      "bucket": "2",
+      "p": 0.47
+    },
+    "locked": true,
+    "attention": [
+      0.18,
+      0.07,
+      0.75
+    ],
+    "evidence": [
+      {
+        "turn_idx": 2,
+        "reason": "Identity switch after a 'wrong number' opener"
+      },
+      {
+        "turn_idx": 2,
+        "reason": "Rapport-building after the sender admits a mistake"
+      }
+    ],
+    "chloroplast_hits": [],
+    "model": {
+      "name": "stub",
+      "version": "contract-example-turn3",
+      "runtime": "browser"
+    }
+  },
+  {
+    "risk": 0.74,
+    "confidence_band": "uncertain",
+    "family": {
+      "id": "pig_butchering",
+      "label": "Relationship / crypto (pig butchering)",
+      "p": 0.6808,
+      "source": "base"
+    },
+    "family_probs": {
+      "benign": 0.26,
+      "pig_butchering": 0.6808,
+      "bank_impersonation": 0.01184,
+      "family_emergency": 0.01184,
+      "job_task": 0.01184,
+      "toll_delivery": 0.01184,
+      "carrier_support": 0.01184
+    },
+    "next_stage": {
+      "stage": "hook",
+      "p": 0.61
+    },
+    "turns_to_strike": {
+      "bucket": "2",
+      "p": 0.47
+    },
+    "locked": true,
+    "attention": [
+      0.083333,
+      0.083333,
+      0.75,
+      0.083333
+    ],
+    "evidence": [
+      {
+        "turn_idx": 2,
+        "reason": "Identity switch after a wrong-number opener"
+      }
+    ],
+    "chloroplast_hits": [],
+    "model": {
+      "name": "stub",
+      "version": "scripted-demo-v1",
+      "runtime": "browser"
+    }
+  },
+  {
+    "risk": 0.87,
+    "confidence_band": "high",
+    "family": {
+      "id": "pig_butchering",
+      "label": "Relationship / crypto (pig butchering)",
+      "p": 0.8004,
+      "source": "base"
+    },
+    "family_probs": {
+      "benign": 0.13,
+      "pig_butchering": 0.8004,
+      "bank_impersonation": 0.01392,
+      "family_emergency": 0.01392,
+      "job_task": 0.01392,
+      "toll_delivery": 0.01392,
+      "carrier_support": 0.01392
+    },
+    "next_stage": {
+      "stage": "strike",
+      "p": 0.61
+    },
+    "turns_to_strike": {
+      "bucket": "1",
+      "p": 0.47
+    },
+    "locked": true,
+    "attention": [
+      0.0625,
+      0.0625,
+      0.75,
+      0.0625,
+      0.0625
+    ],
+    "evidence": [
+      {
+        "turn_idx": 2,
+        "reason": "A friendly wrong-number opener shifts toward investment returns"
+      }
+    ],
+    "chloroplast_hits": [],
+    "model": {
+      "name": "stub",
+      "version": "scripted-demo-v1",
+      "runtime": "browser"
+    }
+  },
+  {
+    "risk": 0.94,
+    "confidence_band": "high",
+    "family": {
+      "id": "pig_butchering",
+      "label": "Relationship / crypto (pig butchering)",
+      "p": 0.8648,
+      "source": "base"
+    },
+    "family_probs": {
+      "benign": 0.06,
+      "pig_butchering": 0.8648,
+      "bank_impersonation": 0.01504,
+      "family_emergency": 0.01504,
+      "job_task": 0.01504,
+      "toll_delivery": 0.01504,
+      "carrier_support": 0.01504
+    },
+    "next_stage": {
+      "stage": "benign",
+      "p": 0.61
+    },
+    "turns_to_strike": {
+      "bucket": "0",
+      "p": 0.47
+    },
+    "locked": true,
+    "attention": [
+      0.05,
+      0.05,
+      0.75,
+      0.05,
+      0.05,
+      0.05
+    ],
+    "evidence": [
+      {
+        "turn_idx": 2,
+        "reason": "A friendly wrong-number opener shifts toward investment returns"
+      }
+    ],
+    "chloroplast_hits": [],
+    "model": {
+      "name": "stub",
+      "version": "scripted-demo-v1",
+      "runtime": "browser"
+    }
+  }
+]
