@@ -44,6 +44,7 @@ from ironguard_ml.train import (
     scored,
     temperatures,
 )
+from ironguard_ml.zero_day import read_records, run_lofo
 
 NATIVE_THRESHOLD = 0.5  # B0 emits 0/1 rule hits
 AVERAGED = ("lead_time", "strike_recall", "hard_neg_fpr", "fpr", "ece_before", "ece_after",
@@ -224,9 +225,11 @@ def main():
                   ("flicker_rate: share of warned TEST conversations whose warning goes off and "
                   "back on (LockOn theta_lock/0.40/2 turns vs risk >= theta_lock without it)."),
                   "Lock-on is inference-only, so PreyNet without lock-on is flicker_rate_no_lock.",
-                  "zero_day (LOFO) is not evaluated yet."],
+                  "zero_day: LOFO for job_task (see zero_day.notes); null if data is too small."],
     }
-    result = evaluate(splits, dataset, with_preynet=True)
+    v1_records = {r["id"]: r for r in read_records(data)}
+    result = {**evaluate(splits, dataset, with_preynet=True),
+              "zero_day": run_lofo(splits, v1_records)}
     schema = json.loads((ROOT / "contracts/schemas/metrics.schema.json").read_text())
     jsonschema.validate(result, schema)
     payload = json.dumps(result, indent=2, allow_nan=False) + "\n"
