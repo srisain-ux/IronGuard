@@ -5,9 +5,9 @@ import pytest
 import torch
 
 from ironguard_ml.data import ROOT
-from ironguard_ml.export import INPUT, OPSET, OUTPUTS, export, load_net
+from ironguard_ml.export import INPUT, OPSET, OUTPUTS, export
 from ironguard_ml.features import MAX_TURNS, TURN_DIM
-from ironguard_ml.preynet import PreyNet, pack
+from ironguard_ml.preynet import PreyNet, load_net, pack
 
 ARTIFACTS = ROOT / "ml/artifacts"
 TOLERANCE = 1e-4  # §7: max abs diff over 50 random prefixes

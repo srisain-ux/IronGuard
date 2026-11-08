@@ -1,4 +1,4 @@
-"""`make export`: PreyNet → ONNX for the browser (MODEL_SPEC §7).
+"""`make export`: PreyNet → ONNX for the browser (MODEL_SPEC §7) + the chloroplast negative bank.
 
 ONNX input `turn_vecs` float32 [batch, turns, 385], every turn real (the browser left-truncates
 to the last 12). Outputs are the last turn's `family_logits` [batch, 7], `stage_logits` [batch, 5],
@@ -11,9 +11,11 @@ from pathlib import Path
 import torch
 from torch import nn
 
-from ironguard_ml.data import ROOT
+from ironguard_ml.chloroplast import build_negative_bank, save_bank
+from ironguard_ml.data import DATA_DIR, ROOT
 from ironguard_ml.features import EMB_DIM, TURN_DIM
-from ironguard_ml.preynet import PreyNet
+from ironguard_ml.preynet import PreyNet, load_net
+from ironguard_ml.train import load_splits
 
 OPSET = 17
 INPUT = "turn_vecs"
@@ -37,13 +39,6 @@ class _AllTurns(nn.Module):
         return (net.family(features), net.next_stage(features), net.tts(features), alpha, features)
 
 
-def load_net(artifacts: Path) -> PreyNet:
-    checkpoint = torch.load(artifacts / "preynet.pt", map_location="cpu", weights_only=True)
-    net = PreyNet(**checkpoint["config"])
-    net.load_state_dict(checkpoint["state_dict"])
-    return net.eval()
-
-
 def export(net: PreyNet, out: Path) -> None:
     example = torch.zeros(1, 3, TURN_DIM)
     # export() restores the module's mode afterwards, so the wrapper itself must be in eval mode
@@ -60,11 +55,20 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--artifacts", type=Path, default=ROOT / "ml/artifacts")
     parser.add_argument("--out", type=Path, default=ROOT / "ml/artifacts/preynet.onnx")
+    parser.add_argument("--data", type=Path, default=DATA_DIR / "generated" / "v1",
+                        help="dataset whose TRAIN split feeds the chloroplast negative bank")
     args = parser.parse_args()
     if not (args.artifacts / "preynet.pt").exists():
         parser.error(f"missing {args.artifacts / 'preynet.pt'} (run `make train`)")
-    export(load_net(args.artifacts), args.out)
+    net = load_net(args.artifacts)
+    export(net, args.out)
     print(f"Wrote {args.out} ({args.out.stat().st_size} bytes, opset {OPSET})")
+    try:
+        splits, _, _ = load_splits(args.data)
+    except ValueError as exc:
+        parser.error(str(exc))
+    bank = save_bank(args.artifacts, *build_negative_bank(net, splits["train"]))
+    print(f"Wrote {bank} ({bank.stat().st_size} bytes) from {len(splits['train'])} TRAIN conversations")
 
 
 if __name__ == "__main__":

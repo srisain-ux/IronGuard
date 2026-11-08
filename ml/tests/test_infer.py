@@ -11,7 +11,7 @@ import torch
 from ironguard_ml.data import Turn
 from ironguard_ml.features import EMB_DIM
 from ironguard_ml.infer import (
-    chloroplast_probs,
+    apply_chloroplast,
     confidence_band,
     evidence,
     load,
@@ -98,10 +98,10 @@ def test_chloroplast_math_matches_formula():
     f = torch.from_numpy(rng.normal(size=(3, FEATURE_DIM)).astype(np.float32))
     expected = torch.sigmoid(torch.nn.functional.gelu(f @ torch.from_numpy(w1).T
                              + torch.from_numpy(b1)) @ torch.from_numpy(w2).T + torch.from_numpy(b2))
-    assert torch.allclose(chloroplast_probs(manifest, f), expected.squeeze(1))
+    assert torch.allclose(apply_chloroplast(manifest, f), expected.squeeze(1))
     manifest["hidden_dim"] = 5
     with pytest.raises(ValueError, match="bytes"):
-        chloroplast_probs(manifest, f)
+        apply_chloroplast(manifest, f)
 
 
 def test_lock_on_hysteresis():
