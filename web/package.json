@@ -1,10 +1,10 @@
 {
-  "name": "odonataguard-web",
+  "name": "ironguard-web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite --host 127.0.0.1 --strictPort",
     "build": "tsc --noEmit && vite build",
     "lint": "tsc --noEmit",
     "contracts:generate": "node scripts/generate-contracts.mjs"
@@ -12,21 +12,23 @@
   "dependencies": {
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router-dom": "7.9.6",
+    "react-router-dom": "6.30.1",
     "recharts": "3.4.1"
   },
   "devDependencies": {
     "@types/node": "22.15.30",
-    "@types/react": "18.3.23",
-    "@types/react-dom": "18.3.7",
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.5",
     "@vitejs/plugin-react": "4.7.0",
     "autoprefixer": "10.4.21",
     "json-schema-to-typescript": "16.0.0",
-    "postcss": "8.5.6",
+    "postcss": "8.5.3",
     "tailwindcss": "3.4.17",
-    "typescript": "5.9.3",
-    "vite": "6.3.5"
+    "typescript": "5.7.3",
+    "vite": "6.1.0"
   },
-  "engines": {"node": ">=20"},
+  "engines": {
+    "node": ">=20"
+  },
   "packageManager": "pnpm@12.16.1"
 }

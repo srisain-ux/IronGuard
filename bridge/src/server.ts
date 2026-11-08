@@ -1,82 +1,150 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
-import { existsSync } from "node:fs";
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { loadEnvFile } from "node:process";
-import { Spectrum, text } from "spectrum-ts";
-import { imessage } from "spectrum-ts/providers/imessage";
+import { createServer, type IncomingMessage } from "node:http";
+import { createHash } from "node:crypto";
+import {
+  text,
+  type WebhookRawRequest,
+  type WebhookRawResult,
+} from "spectrum-ts";
 
-if (existsSync(".env")) loadEnvFile(".env");
-
-const port = 8787;
-const signingSecret = process.env.PHOTON_WEBHOOK_SECRET;
-const projectId = process.env.PHOTON_PROJECT_ID;
-const projectSecret = process.env.PHOTON_SECRET;
-
-type PhotonPayload = {
-  message?: { sender?: { id?: string }; content?: { type?: string; text?: string } };
+export const ONLINE = "IronGuard online 🛡";
+export type BridgeStatus =
+  | "needs_credentials"
+  | "needs_webhook_secret"
+  | "connecting"
+  | "ready"
+  | "connection_failed";
+export type EchoMessage = {
+  id: string;
+  direction: "inbound" | "outbound";
+  content: { type: string; text?: string };
+};
+export type EchoSpace = {
+  id: string;
+  send(input: ReturnType<typeof text>): Promise<unknown>;
+};
+export type WebhookTransport = {
+  signatureHeaders?: string[];
+  webhook(
+    request: WebhookRawRequest,
+    handler: (space: EchoSpace, message: EchoMessage) => void,
+  ): Promise<WebhookRawResult>;
+  stop?(): Promise<void>;
 };
 
-const sender = projectId && projectSecret
-  ? Spectrum({ projectId, projectSecret, providers: [imessage.config()] })
-    .then((app) => imessage(app))
-    .catch((error: unknown) => {
-      console.error("Photon SDK initialization failed", error instanceof Error ? error.message : "unknown error");
-      return null;
-    })
-  : null;
-
-function verify(body: string, request: IncomingMessage): boolean {
-  if (!signingSecret) return false;
-  const event = request.headers["x-spectrum-event"];
-  const timestamp = request.headers["x-spectrum-timestamp"];
-  const signature = request.headers["x-spectrum-signature"];
-  if (typeof event !== "string" || typeof timestamp !== "string" || typeof signature !== "string") return false;
-  const age = Math.abs(Math.floor(Date.now() / 1000) - Number(timestamp));
-  if (!Number.isFinite(age) || age > 300) return false;
-  const expected = `v0=${createHmac("sha256", signingSecret).update(`v0:${timestamp}:${body}`).digest("hex")}`;
-  const left = Buffer.from(expected);
-  const right = Buffer.from(signature);
-  return left.length === right.length && timingSafeEqual(left, right);
+// Hashes only, in memory, bounded and expired after 30 minutes. No thread text is retained.
+export function echoHandler(
+  sendFailed: () => void = () => {},
+  replyAccepted: () => void = () => {},
+) {
+  const seen = new Map<string, number>();
+  return async (space: EchoSpace, message: EchoMessage) => {
+    if (message.direction !== "inbound") return;
+    const content = message.content;
+    if (
+      content.type === "text" &&
+      (typeof content.text !== "string" || !/[\p{L}\p{N}]/u.test(content.text))
+    )
+      return;
+    const now = Date.now();
+    for (const [key, at] of seen) if (now - at > 30 * 60_000) seen.delete(key);
+    const digest = createHash("sha256")
+      .update(`${space.id}:${message.id}`)
+      .digest("hex");
+    if (seen.has(digest)) return;
+    if (seen.size >= 1000) seen.delete(seen.keys().next().value!);
+    seen.set(digest, now);
+    try {
+      await space.send(
+        text(
+          content.type === "text" ? ONLINE : "I can only read text right now.",
+        ),
+      );
+      replyAccepted();
+    } catch {
+      seen.delete(digest);
+      sendFailed();
+    }
+  };
 }
 
-async function readBody(request: IncomingMessage): Promise<string> {
-  let body = "";
+async function readBody(request: IncomingMessage) {
+  const chunks: Buffer[] = [];
+  let size = 0;
   for await (const chunk of request) {
-    body += chunk.toString();
-    if (body.length > 64_000) throw new Error("payload too large");
+    size += chunk.length;
+    if (size > 64 * 1024) throw new Error("body_limit");
+    chunks.push(Buffer.from(chunk));
   }
-  return body;
+  return Buffer.concat(chunks);
 }
 
-function reply(response: ServerResponse, status: number, body: string): void {
-  response.writeHead(status, { "content-type": "text/plain; charset=utf-8" });
-  response.end(body);
-}
-
-createServer(async (request, response) => {
-  if (request.method === "GET" && request.url === "/health") return reply(response, 200, "ok");
-  if (request.method !== "POST" || request.url !== "/spectrum-webhook") return reply(response, 404, "not found");
-  let rawBody: string;
-  try { rawBody = await readBody(request); }
-  catch { return reply(response, 413, "payload too large"); }
-  if (!signingSecret) return reply(response, 503, "webhook secret missing");
-  if (!verify(rawBody, request)) return reply(response, 401, "invalid signature");
-  let payload: PhotonPayload;
-  try { payload = JSON.parse(rawBody) as PhotonPayload; }
-  catch { return reply(response, 400, "invalid JSON"); }
-  const event = request.headers["x-spectrum-event"];
-  const address = payload.message?.sender?.id;
-  const message = payload.message?.content;
-  reply(response, 200, "ok");
-  if (event !== "messages" || !address || message?.type !== "text" || !message.text?.trim() || !sender) return;
-  void sender.then(async (sdk) => {
-    if (!sdk) return;
-    const space = await sdk.space.create(address);
-    await space.send(text("OdonataGuard online 🛡"));
-  }).catch((error: unknown) => {
-    console.error("Photon reply failed", error instanceof Error ? error.message : "unknown error");
+export function bridgeServer(state: {
+  status: () => BridgeStatus;
+  sdk: () => WebhookTransport | undefined;
+  onMessage: ReturnType<typeof echoHandler>;
+  diagnostics?: () => Record<string, string | number>;
+}) {
+  return createServer(async (request, response) => {
+    if (
+      request.method === "GET" &&
+      (request.url === "/health" || request.url === "/")
+    ) {
+      response.writeHead(200, {
+        "content-type": "application/json",
+        "cache-control": "no-store",
+      });
+      response.end(
+        JSON.stringify({
+          status: state.status(),
+          mode: "echo",
+          webhook: "/webhook",
+          ...state.diagnostics?.(),
+        }),
+      );
+      return;
+    }
+    if (
+      request.method !== "POST" ||
+      !["/", "/webhook"].includes(request.url ?? "")
+    ) {
+      response.writeHead(404).end();
+      return;
+    }
+    const sdk = state.sdk();
+    if (!sdk) {
+      response
+        .writeHead(503)
+        .end(
+          "Bridge not ready. Check /health and bridge/.env, then restart make bridge.",
+        );
+      return;
+    }
+    const requiredHeaders = Array.isArray(sdk.signatureHeaders)
+      ? sdk.signatureHeaders
+      : ["x-spectrum-signature", "x-spectrum-timestamp"];
+    if (requiredHeaders.some((name) => !request.headers[name])) {
+      response.writeHead(401).end("Signed Photon webhook required.");
+      return;
+    }
+    try {
+      const body = await readBody(request);
+      const headers: Record<string, string> = {};
+      for (const [name, value] of Object.entries(request.headers))
+        if (typeof value === "string") headers[name] = value;
+      // Each transport verifies its own signature format over the exact bytes.
+      const result = await sdk.webhook({ body, headers }, (space, message) => {
+        // Queue after acknowledgment. Sender and text never enter application logs.
+        setImmediate(() => {
+          void state.onMessage(space, message);
+        });
+      });
+      response.writeHead(result.status, result.headers).end(result.body);
+    } catch (error) {
+      response
+        .writeHead(
+          error instanceof Error && error.message === "body_limit" ? 413 : 400,
+        )
+        .end("Webhook rejected.");
+    }
   });
-}).listen(port, () => {
-  console.info(`OdonataGuard bridge listening on ${port}`);
-  if (!signingSecret || !sender) console.info("Photon credentials missing; signed webhook replies are unavailable.");
-});
+}

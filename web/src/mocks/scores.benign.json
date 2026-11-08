@@ -1,0 +1,134 @@
+[
+  {
+    "risk": 0.26,
+    "confidence_band": "low",
+    "family": {
+      "id": "benign",
+      "label": "Not a scam",
+      "p": 0.74,
+      "source": "base"
+    },
+    "family_probs": {
+      "benign": 0.74,
+      "pig_butchering": 0.043333,
+      "bank_impersonation": 0.043333,
+      "family_emergency": 0.043333,
+      "job_task": 0.043333,
+      "toll_delivery": 0.043333,
+      "carrier_support": 0.043333
+    },
+    "next_stage": {
+      "stage": "benign",
+      "p": 0.61
+    },
+    "turns_to_strike": {
+      "bucket": "none",
+      "p": 0.47
+    },
+    "locked": false,
+    "attention": [
+      1
+    ],
+    "evidence": [
+      {
+        "turn_idx": 0,
+        "reason": "An unfamiliar sender. Wait for more context."
+      }
+    ],
+    "chloroplast_hits": [],
+    "model": {
+      "name": "stub",
+      "version": "scripted-demo-v1",
+      "runtime": "browser"
+    }
+  },
+  {
+    "risk": 0.26,
+    "confidence_band": "low",
+    "family": {
+      "id": "benign",
+      "label": "Not a scam",
+      "p": 0.74,
+      "source": "base"
+    },
+    "family_probs": {
+      "benign": 0.74,
+      "pig_butchering": 0.043333,
+      "bank_impersonation": 0.043333,
+      "family_emergency": 0.043333,
+      "job_task": 0.043333,
+      "toll_delivery": 0.043333,
+      "carrier_support": 0.043333
+    },
+    "next_stage": {
+      "stage": "benign",
+      "p": 0.61
+    },
+    "turns_to_strike": {
+      "bucket": "none",
+      "p": 0.47
+    },
+    "locked": false,
+    "attention": [
+      0.75,
+      0.25
+    ],
+    "evidence": [
+      {
+        "turn_idx": 0,
+        "reason": "An unfamiliar sender. Wait for more context."
+      }
+    ],
+    "chloroplast_hits": [],
+    "model": {
+      "name": "stub",
+      "version": "scripted-demo-v1",
+      "runtime": "browser"
+    }
+  },
+  {
+    "risk": 0.14,
+    "confidence_band": "low",
+    "family": {
+      "id": "benign",
+      "label": "Not a scam",
+      "p": 0.86,
+      "source": "base"
+    },
+    "family_probs": {
+      "benign": 0.86,
+      "pig_butchering": 0.023333,
+      "bank_impersonation": 0.023333,
+      "family_emergency": 0.023333,
+      "job_task": 0.023333,
+      "toll_delivery": 0.023333,
+      "carrier_support": 0.023333
+    },
+    "next_stage": {
+      "stage": "benign",
+      "p": 0.61
+    },
+    "turns_to_strike": {
+      "bucket": "none",
+      "p": 0.47
+    },
+    "locked": false,
+    "attention": [
+      0.125,
+      0.125,
+      0.75
+    ],
+    "evidence": [
+      {
+        "turn_idx": 2,
+        "reason": "Wrong-number exchange ends without a request"
+      }
+    ],
+    "chloroplast_hits": [],
+    "model": {
+      "name": "stub",
+      "version": "scripted-demo-v1",
+      "runtime": "browser"
+    }
+  }
+]
