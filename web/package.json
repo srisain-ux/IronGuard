@@ -7,9 +7,15 @@
     "dev": "vite --host 127.0.0.1 --strictPort",
     "build": "tsc --noEmit && vite build",
     "lint": "tsc --noEmit",
-    "contracts:generate": "node scripts/generate-contracts.mjs"
+    "contracts:generate": "node scripts/generate-contracts.mjs",
+    "models:prepare": "node scripts/prepare-models.mjs",
+    "predev": "pnpm models:prepare",
+    "prebuild": "pnpm models:prepare",
+    "test": "node --import tsx --test src/runtime/*.test.ts"
   },
   "dependencies": {
+    "@huggingface/transformers": "3.8.1",
+    "onnxruntime-web": "1.22.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-router-dom": "6.30.1",
@@ -24,6 +30,7 @@
     "json-schema-to-typescript": "16.0.0",
     "postcss": "8.5.3",
     "tailwindcss": "3.4.17",
+    "tsx": "4.19.3",
     "typescript": "5.7.3",
     "vite": "6.1.0"
   },
