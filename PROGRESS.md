@@ -10,12 +10,12 @@
 | Devpost placeholder (skipped by team decision; final entry only) | — | — | ➖ |
 | M1: data v1 + baselines + UI shell + Photon echo | target | `03:45` | ⬜ |
 | M2: end-to-end forward → forecast → safety card | target | `2026-11-08 05:24 CST` | ✅ (merged; make sync green; live-phone verification outstanding) |
-| M3: live zero-day chloroplast + on-device inference | target | `09:00` | ⬜ |
+| M3: live zero-day chloroplast + on-device inference | target | `2026-11-08 06:13 CST` | ✅ (merged; make sync green; live demo/privacy verification outstanding) |
 | FREEZE: features frozen; fixes only | target | `09:00` | ⬜ |
 | M4: final merge, tag v1.0-hackutd | target | `10:30` | ⬜ |
 | SUBMIT: final Devpost (hard deadline **12:00 PM**) | target | `11:30` | ⬜ |
 
-**Current phase:** `P3` (Step 3 in docs/PROMPTS.md)
+**Current phase:** `P4` (Step 4 in docs/PROMPTS.md; feature freeze, fixes only)
 
 ---
 
