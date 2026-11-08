@@ -29,7 +29,7 @@ export interface EvalSummary {
   available?: boolean;
   dataset?: { version?: string };
   models?: Record<string, { ewr_at_k?: (number | null)[]; lead_time?: number | null; ece_before?: number | null; ece_after?: number | null }>;
-  zero_day?: { base_ewr_at_3?: number | null; chloroplast_ewr_at_3?: number | null; sample_efficiency?: { n: number; ewr_at_3: number | null }[]; time_to_protection_s?: number | null } | null;
+  zero_day?: { available?: boolean; base_ewr_at_3?: number | null; chloroplast_ewr_at_3?: number | null; sample_efficiency?: { n: number; ewr_at_3: number | null }[]; time_to_protection_s?: number | null } | null;
   reliability?: { bins?: number[]; acc?: (number | null)[]; conf?: (number | null)[] };
 }
 
