@@ -12,10 +12,10 @@
 | M2: end-to-end forward → forecast → safety card | target | `2026-11-08 05:24 CST` | ✅ (merged; make sync green; live-phone verification outstanding) |
 | M3: live zero-day chloroplast + on-device inference | target | `2026-11-08 06:28 CST` | ✅ (all window PRs merged; make sync green; live demo/privacy verification outstanding) |
 | FREEZE: features frozen; fixes only | target | `09:00` | ⬜ |
-| M4: final merge, tag v1.0-hackutd | target | `10:30` | ⬜ |
+| M4: final merge, tag v1.0-hackutd | target | `2026-11-08 07:12 CST` | ✅ (window merged; make sync green; release tag pending separate release step) |
 | SUBMIT: final Devpost (hard deadline **12:00 PM**) | target | `11:30` | ⬜ |
 
-**Current phase:** `P4` (next: Step 4 in docs/PROMPTS.md; final numbers, clean-machine test and pitch; fixes only)
+**Current phase:** `P5` (next: release-tag step in docs/PROMPTS.md, then finish-line video, final rehearsal and Devpost submission; fixes only)
 
 ---
 
