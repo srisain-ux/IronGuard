@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "chloroplast.schema.json",
+  "title": "ChloroplastManifest",
+  "description": "A tiny adapter head for one zero-day scam family. Downloaded by phones; applied to PreyNet's 640-d `features` output. Weights are base64 float32 little-endian, row-major.",
+  "type": "object",
+  "required": ["id", "family_id", "label", "alert", "created_at", "half_life_hours", "feature_dim", "hidden_dim", "weights", "threshold", "metrics", "size_bytes", "sha256"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {"type": "string", "pattern": "^cp_[a-z0-9_]+$"},
+    "family_id": {"type": "string", "pattern": "^zd_[a-z0-9_]+$"},
+    "label": {"type": "string", "maxLength": 80},
+    "alert": {"type": "string", "maxLength": 400, "description": "The one-sentence zero-day alert that seeded the algae."},
+    "created_at": {"type": "string", "format": "date-time"},
+    "half_life_hours": {"type": "number", "exclusiveMinimum": 0, "description": "Display-only vitality decay (kleptoplasts degrade); never disables protection."},
+    "feature_dim": {"const": 640},
+    "hidden_dim": {"type": "integer", "minimum": 4, "maximum": 128},
+    "weights": {
+      "type": "object",
+      "required": ["w1", "b1", "w2", "b2"],
+      "additionalProperties": false,
+      "properties": {
+        "w1": {"type": "string", "description": "base64 float32 [hidden_dim x feature_dim]"},
+        "b1": {"type": "string", "description": "base64 float32 [hidden_dim]"},
+        "w2": {"type": "string", "description": "base64 float32 [1 x hidden_dim]"},
+        "b2": {"type": "string", "description": "base64 float32 [1]"}
+      }
+    },
+    "threshold": {"type": "number", "minimum": 0, "maximum": 1},
+    "metrics": {
+      "type": "object",
+      "required": ["n_pos", "n_neg", "train_seconds"],
+      "additionalProperties": false,
+      "properties": {
+        "n_pos": {"type": "integer"},
+        "n_neg": {"type": "integer"},
+        "train_seconds": {"type": "number"},
+        "generate_seconds": {"type": "number"},
+        "val_auc": {"type": "number"},
+        "val_recall_at_1fpr": {"type": "number"}
+      }
+    },
+    "size_bytes": {"type": "integer", "minimum": 1},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}

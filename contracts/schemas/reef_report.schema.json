@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "reef_report.schema.json",
+  "title": "ReefReport",
+  "description": "An anonymous, consented scam pattern sent to the reef (POST /v1/reef/report). Must already be scrubbed: no names, numbers, URLs, emails, amounts tied to a person.",
+  "type": "object",
+  "required": ["consent", "channel", "family_guess", "stage_sequence", "template_text"],
+  "additionalProperties": false,
+  "properties": {
+    "consent": {"const": true},
+    "channel": {"enum": ["sms", "imessage", "rcs", "whatsapp", "email", "other"]},
+    "family_guess": {"type": "string"},
+    "stage_sequence": {"type": "array", "items": {"enum": ["benign", "bait", "pivot", "hook", "strike"]}, "maxItems": 20},
+    "template_text": {"type": "string", "maxLength": 1500, "description": "Scrubbed with placeholders like [PHONE], [URL], [NAME], [AMOUNT], [BRAND]."},
+    "source": {"enum": ["photon", "web"]}
+  }
+}

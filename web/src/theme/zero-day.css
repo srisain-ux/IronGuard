@@ -1,0 +1,92 @@
+/* IronGuard: Zero Day theme tokens (sampled from the HackUTD 2026 opening deck). Owner: C. */
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Roboto+Mono:wght@400;500;600&family=Inter:wght@400;500;700&display=swap");
+
+:root {
+  /* night city */
+  --zd-void: #05030e;          /* p1 sky */
+  --zd-night: #0c0416;
+  --zd-indigo-900: #100a37;    /* p123 */
+  --zd-indigo-800: #1b1445;    /* p111 */
+  --zd-indigo-700: #2c214a;    /* p121 */
+  --zd-violet: #4f3288;        /* p121 / p4 */
+  --zd-periwinkle: #544ea5;    /* p111 */
+  --zd-blue: #2d419b;          /* p123 */
+  --zd-lavender: #b9a2cf;      /* p111 glow */
+  --zd-mist: #b3b6d7;          /* p4 */
+  --zd-cream: #f8f3ec;         /* slide titles */
+  --zd-podium: #f7efa8;        /* p121 podium */
+
+  /* neon accents */
+  --zd-neon: #e83f8f;          /* "ZERO DAY" sign */
+  --zd-neon-soft: #f576a1;
+  --zd-magenta: #e20074;       /* T-Mobile magenta (official) */
+  --zd-magenta-deep: #771744;  /* p15 */
+  --zd-teal: #3fc1c0;          /* light panels on the sponsor slides */
+  --zd-chloro: #5dff9b;        /* chloroplast green, used only for leaf-sheep elements */
+
+  /* semantic */
+  --zd-risk-low: var(--zd-teal);
+  --zd-risk-mid: var(--zd-podium);
+  --zd-risk-high: var(--zd-neon);
+  --zd-text: var(--zd-cream);
+  --zd-text-dim: var(--zd-mist);
+  --zd-panel: rgba(44, 33, 74, 0.72);      /* frosted indigo glass, like the slide title cards */
+  --zd-panel-border: rgba(185, 162, 207, 0.35);
+
+  --zd-font-display: "Orbitron", system-ui, sans-serif;  /* deck headings */
+  --zd-font-mono: "Roboto Mono", ui-monospace, monospace; /* HUD / terminal / numbers */
+  --zd-font-body: "Inter", system-ui, sans-serif;
+
+  --zd-radius: 14px;
+  --zd-glow-neon: 0 0 6px rgba(232, 63, 143, 0.9), 0 0 22px rgba(232, 63, 143, 0.45);
+  --zd-glow-teal: 0 0 6px rgba(63, 193, 192, 0.8), 0 0 18px rgba(63, 193, 192, 0.35);
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  color: var(--zd-text);
+  font-family: var(--zd-font-body);
+  background:
+    radial-gradient(1200px 600px at 70% -10%, rgba(79, 50, 136, 0.55), transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, rgba(45, 65, 155, 0.45), transparent 60%),
+    linear-gradient(180deg, var(--zd-indigo-900), var(--zd-void));
+  background-attachment: fixed;
+}
+
+/* synthwave floor grid (T-Mobile challenge slides) */
+.zd-grid-floor {
+  position: absolute; inset: auto 0 0 0; height: 38vh; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, rgba(226, 0, 116, 0.35) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(0deg, rgba(226, 0, 116, 0.35) 0 1px, transparent 1px 40px);
+  transform: perspective(420px) rotateX(62deg); transform-origin: bottom;
+  mask-image: linear-gradient(to top, black, transparent);
+}
+
+/* subtle CRT scanlines; keep opacity low for readability */
+.zd-scanlines::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px);
+}
+
+.zd-title { font-family: var(--zd-font-display); font-weight: 900; letter-spacing: 0.04em; color: var(--zd-cream); }
+.zd-neon-sign {
+  font-family: var(--zd-font-display); font-weight: 900; color: var(--zd-neon-soft);
+  border: 2px solid var(--zd-neon); border-radius: 6px; padding: 0.2em 0.5em;
+  text-shadow: var(--zd-glow-neon); box-shadow: var(--zd-glow-neon), inset var(--zd-glow-neon);
+}
+.zd-panel {
+  background: var(--zd-panel); border: 1px solid var(--zd-panel-border);
+  border-radius: var(--zd-radius); backdrop-filter: blur(10px);
+}
+.zd-hud { font-family: var(--zd-font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--zd-text-dim); }
+.zd-locked-link { text-decoration: line-through; color: var(--zd-text-dim); cursor: not-allowed; pointer-events: none; }
+.zd-locked-link::before { content: "🔒 "; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .zd-flicker { animation: zd-flicker 3.2s infinite; }
+  @keyframes zd-flicker { 0%, 92%, 100% { opacity: 1; } 93% { opacity: 0.4; } 95% { opacity: 0.9; } 96% { opacity: 0.5; } }
+  .zd-pulse { animation: zd-pulse 1.6s ease-in-out infinite; }
+  @keyframes zd-pulse { 0%, 100% { box-shadow: var(--zd-glow-neon); } 50% { box-shadow: none; } }
+}

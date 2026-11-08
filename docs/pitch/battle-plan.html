@@ -1,0 +1,258 @@
+<title>IronGuard Battle Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;900&family=Roboto+Mono:wght@400;500;600&family=Inter:wght@400;500;700&display=swap">
+<style>
+/* Layout: one long incident dossier. Neon wordmark up top, then the gap, the model, the team, the clock, the rules, the tracks.
+   Single dark theme on purpose (it matches the HackUTD Zero Day deck). */
+:root {
+  color-scheme: dark;
+  --void: #05030e;
+  --indigo-900: #100a37;
+  --indigo-800: #1b1445;
+  --indigo-700: #2c214a;
+  --violet: #4f3288;
+  --periwinkle: #544ea5;
+  --lavender: #b9a2cf;
+  --mist: #b3b6d7;
+  --cream: #f8f3ec;
+  --podium: #f7efa8;
+  --neon: #e83f8f;
+  --neon-soft: #f576a1;
+  --magenta: #e20074;
+  --teal: #3fc1c0;
+  --chloro: #5dff9b;
+  --panel: rgba(44, 33, 74, 0.72);
+  --panel-line: rgba(185, 162, 207, 0.28);
+  --display: "Orbitron", "Arial Black", system-ui, sans-serif;
+  --mono: "Roboto Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+html { background: var(--void); }
+body {
+  margin: 0; color: var(--cream); font: 15px/1.6 var(--body);
+  background:
+    radial-gradient(1100px 520px at 78% -8%, rgba(79, 50, 136, 0.6), transparent 62%),
+    radial-gradient(800px 480px at 0% 30%, rgba(45, 65, 155, 0.35), transparent 60%),
+    linear-gradient(180deg, var(--indigo-900) 0%, var(--void) 70%);
+  background-color: var(--void);
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--indigo-900); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+
+/* hero */
+.hero { position: relative; overflow: hidden; border-radius: 18px; border: 1px solid var(--panel-line); padding: 44px 28px 120px; background: linear-gradient(180deg, rgba(16,10,55,.2), rgba(5,3,14,.6)); }
+.hero .floor { position: absolute; left: -20%; right: -20%; bottom: -10px; height: 170px; pointer-events: none;
+  background: repeating-linear-gradient(90deg, rgba(226,0,116,.5) 0 1px, transparent 1px 56px), repeating-linear-gradient(0deg, rgba(226,0,116,.5) 0 1px, transparent 1px 30px);
+  transform: perspective(300px) rotateX(60deg); transform-origin: bottom; -webkit-mask-image: linear-gradient(to top, #000, transparent); mask-image: linear-gradient(to top, #000, transparent); }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--mist); }
+.sign { display: inline-block; margin: 18px 0 14px; font: 900 clamp(28px, 6.4vw, 58px)/1.05 var(--display); letter-spacing: .04em; color: var(--neon-soft);
+  border: 2px solid var(--neon); border-radius: 8px; padding: .18em .42em; text-shadow: 0 0 6px rgba(232,63,143,.9), 0 0 24px rgba(232,63,143,.45);
+  box-shadow: 0 0 8px rgba(232,63,143,.7), inset 0 0 12px rgba(232,63,143,.35); }
+.tagline { font: 600 clamp(17px, 2.4vw, 22px)/1.35 var(--display); color: var(--cream); max-width: 34ch; text-wrap: balance; margin: 0 0 12px; }
+.lede { color: var(--mist); max-width: 64ch; margin: 0; }
+.strip { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 8px; font: 500 13px/1 var(--mono); }
+.strip span { padding: 8px 10px; border-radius: 6px; border: 1px solid var(--panel-line); background: rgba(5,3,14,.55); }
+.strip .arrow { border: 0; background: none; padding: 8px 0; color: var(--lavender); }
+.strip .hot { border-color: var(--neon); color: var(--neon-soft); }
+@media (prefers-reduced-motion: no-preference) { .sign { animation: flick 4s infinite; } @keyframes flick { 0%,93%,100%{opacity:1} 94%{opacity:.45} 96%{opacity:.95} 97%{opacity:.55} } }
+
+h2 { font: 900 clamp(18px, 2.6vw, 24px)/1.2 var(--display); letter-spacing: .05em; margin: 0 0 6px; text-wrap: balance; }
+h2 small { display: block; font: 500 11px/1.4 var(--mono); letter-spacing: .16em; color: var(--neon-soft); margin-bottom: 8px; text-transform: uppercase; }
+h3 { font: 600 15px/1.3 var(--display); letter-spacing: .04em; margin: 0 0 6px; }
+p { margin: 0; }
+section > p.intro { color: var(--mist); max-width: 70ch; margin-bottom: 18px; }
+code, .mono { font-family: var(--mono); font-size: .92em; }
+code { color: var(--podium); }
+
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.panel { background: var(--panel); border: 1px solid var(--panel-line); border-radius: 14px; padding: 18px; min-width: 0; }
+.panel p, .panel li { color: var(--mist); }
+.panel ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.k { font: 600 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--teal); margin-bottom: 10px; display: block; }
+.k.pink { color: var(--neon-soft); } .k.green { color: var(--chloro); } .k.yellow { color: var(--podium); }
+
+/* tables */
+.scroll { overflow-x: auto; border: 1px solid var(--panel-line); border-radius: 14px; background: rgba(5,3,14,.5); }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid rgba(185,162,207,.14); }
+th { font: 600 11px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--lavender); background: rgba(44,33,74,.6); position: sticky; top: 0; }
+td { color: var(--mist); } td strong { color: var(--cream); font-weight: 600; }
+tr.gate td { background: rgba(226,0,116,.12); color: var(--cream); font-family: var(--mono); font-size: 13px; }
+.tag { display: inline-block; font: 600 11px/1 var(--mono); padding: 4px 7px; border-radius: 5px; border: 1px solid; white-space: nowrap; }
+.tag.a { color: var(--neon-soft); border-color: rgba(232,63,143,.6); }
+.tag.b { color: var(--teal); border-color: rgba(63,193,192,.6); }
+.tag.c { color: var(--chloro); border-color: rgba(93,255,155,.55); }
+.tag.x { color: var(--podium); border-color: rgba(247,239,168,.5); }
+
+/* model diagram */
+.pipe { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); align-items: stretch; }
+.node { border: 1px solid var(--panel-line); border-radius: 10px; padding: 12px; background: rgba(5,3,14,.55); min-width: 0; }
+.node b { display: block; font: 600 13px/1.3 var(--display); letter-spacing: .03em; color: var(--cream); margin-bottom: 4px; }
+.node span { font: 400 12.5px/1.45 var(--mono); color: var(--mist); }
+.node.hot { border-color: var(--neon); box-shadow: 0 0 0 1px rgba(232,63,143,.25) inset; }
+.node.leaf { border-color: rgba(93,255,155,.5); }
+
+.rules { counter-reset: r; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin: 0; padding: 0; list-style: none; }
+.rules li { counter-increment: r; position: relative; padding: 14px 14px 14px 52px; border-radius: 12px; border: 1px solid var(--panel-line); background: var(--panel); color: var(--mist); min-width: 0; }
+.rules li::before { content: counter(r, decimal-leading-zero); position: absolute; left: 14px; top: 13px; font: 900 16px/1 var(--display); color: var(--neon-soft); }
+.rules li strong { color: var(--cream); }
+
+.files { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.files div { font: 500 13px/1.45 var(--mono); padding: 10px 12px; border-radius: 8px; background: rgba(5,3,14,.55); border: 1px dashed var(--panel-line); color: var(--mist); min-width: 0; overflow-wrap: anywhere; }
+.files div b { color: var(--podium); font-weight: 600; display: block; }
+.note { font: 500 13px/1.5 var(--mono); color: var(--podium); border-left: 3px solid var(--podium); padding: 8px 12px; background: rgba(247,239,168,.06); border-radius: 0; }
+footer { color: var(--lavender); font: 400 12px/1.6 var(--mono); }
+footer a { color: var(--teal); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">HackUTD 2026 · Zero Day · Incident 0x01 · Team of 3 · 12 build hours</div>
+  <div class="sign">IRONGUARD</div>
+  <p class="tagline">Intercept the scam before the strike.</p>
+  <p class="lede">A dragonfly-inspired trajectory model forecasts where a text conversation is heading. A leaf-sheep-inspired distillation loop learns brand-new scams without reading anyone's texts. A Nemotron agent and a Photon iMessage/SMS number turn the forecast into protection.</p>
+  <div class="strip" aria-label="Scam kill chain">
+    <span>🎣 BAIT</span><span class="arrow">➡</span><span class="hot">🎭 PIVOT · flagged here</span><span class="arrow">➡</span><span>🪝 HOOK</span><span class="arrow">➡</span><span>💸 STRIKE · filters react here</span>
+  </div>
+  <div class="floor" aria-hidden="true"></div>
+</header>
+
+<section>
+  <h2><small>01 · The gap</small>Filters ask "is this a scam?" We ask "where is this going?"</h2>
+  <p class="intro">Multi-turn scams open innocently. Per-message filters only react at the strike, when the link or money ask arrives, and by then the victim is hooked. The strongest shipping system we found, Google Messages Scam Detection on Gemini Nano, is reported to run only on recent flagship Android phones.</p>
+  <div class="grid">
+    <div class="panel"><span class="k pink">Gap 1 · Forecast</span><h3>Lead time and honest confidence</h3><p>PreyNet predicts scam family, next stage and turns until the ask from turn 1–2, with calibrated probabilities and an explicit "uncertain" band. New metric: turns of warning before the strike.</p></div>
+    <div class="panel"><span class="k green">Gap 2 · Zero-day</span><h3>New scams in minutes, zero customer data</h3><p>One-sentence alert → Nemotron synthesizes conversations → an ~82 KB chloroplast trains in seconds → phones absorb it and run it locally.</p></div>
+    <div class="panel"><span class="k">Gap 3 · Reach and action</span><h3>Any phone, real next steps</h3><p>Forward to a Photon number from iPhone or Android. The Safeguard Agent verifies the claimed brand, number and domain, locks links, and offers one-tap safe actions.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><small>02 · The model (main focus)</small>How we train it</h2>
+  <p class="intro">Everything below is specified in <code>docs/MODEL_SPEC.md</code>. Each biology idea maps to a concrete part of the network, and every number shown to judges comes from <code>eval_summary.json</code>.</p>
+  <div class="pipe" role="list">
+    <div class="node" role="listitem"><b>1 · Algae data</b><span>Nemotron 3 Nano writes ~2,000 conversations: 6 scam families + benign, 40% hard negatives, critic-filtered</span></div>
+    <div class="node" role="listitem"><b>2 · Turn vectors</b><span>"[THEM]/[ME]" + MiniLM 384-d, cached; same embedder in the browser</span></div>
+    <div class="node hot" role="listitem"><b>3 · PreyNet</b><span>Linear→causal GRU→CSTMD1 attention→heads: family · next stage · turns-to-strike. ~160k params</span></div>
+    <div class="node" role="listitem"><b>4 · Calibrate</b><span>Temperature scaling on val; ECE; lock-on hysteresis 0.70 / 0.40</span></div>
+    <div class="node leaf" role="listitem"><b>5 · Chloroplast</b><span>Zero-day: MLP 640→32→1 on frozen features, &lt;10 s CPU, ~82 KB, ships to phones</span></div>
+  </div>
+  <div class="scroll" style="margin-top:14px">
+    <table>
+      <thead><tr><th>Biology</th><th>In the animal</th><th>In IronGuard</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Internal models</strong><br>Mischiati et al., Nature 2015</td><td>Dragonfly steering is driven by predictions of prey motion; vision corrects for surprises</td><td>Forecast heads for next stage and turns-to-strike; each new turn corrects the GRU state</td></tr>
+        <tr><td><strong>TSDN population vector</strong><br>Gonzalez-Bellido et al., PNAS 2013</td><td>8 pairs of descending neurons jointly encode prey direction</td><td>Family probabilities drawn as a Trajectory Compass needle</td></tr>
+        <tr><td><strong>CSTMD1 lock-on</strong><br>Wiederman &amp; O'Carroll 2013 · Lancer et al. 2019</td><td>One neuron locks on to one target and is primed by earlier targets on the same path</td><td>Attention over turns (shows which turn primed the lock) + lock-on hysteresis so warnings don't flicker</td></tr>
+        <tr><td><strong>Kleptoplasty</strong><br>Christa et al. 2014</td><td>The leaf sheep keeps only the algae's chloroplasts; in this species they are short-lived and need re-feeding</td><td>Phones keep only a tiny adapter (never the teacher or the data). A vitality half-life prompts a refresh from the reef</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="grid" style="margin-top:14px">
+    <div class="panel"><span class="k yellow">Headline metrics</span><ul><li><strong>EWR@k</strong>: early-warning rate at turn k, at 1% false alarms</li><li><strong>Lead time</strong>: turns of warning before the ask</li><li><strong>ECE</strong> before/after calibration</li><li><strong>Zero-day</strong>: held-out family before/after the chloroplast, plus a sample-efficiency curve</li></ul></div>
+    <div class="panel"><span class="k pink">Leakage defenses</span><ul><li>Human-written test set, never trained on</li><li>Conversation-level splits (no prefix crosses splits)</li><li>Near-duplicate removal; no label words in text</li><li>Thresholds, temperature and early stopping on val only</li></ul></div>
+    <div class="panel"><span class="k">Baselines it must beat</span><ul><li>B0 keyword rules on the latest message</li><li>B1 TF-IDF + LR, latest message</li><li>B2 MiniLM + LR, latest message</li><li>B3 bag-of-turns (context without order)</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <h2><small>03 · The team</small>Three lanes that never touch</h2>
+  <div class="grid">
+    <div class="panel"><span class="k pink">Member A · Dragonfly</span><h3>ML lead · Claude Code + Codex</h3><ul><li><code>ml/</code>, seed + human test sets, <code>MODEL_SPEC.md</code></li><li>PreyNet, baselines, metrics, calibration</li><li>Chloroplast trainer, ONNX export</li><li>Presents "how we trained it"</li></ul></div>
+    <div class="panel"><span class="k">Member B · Algae</span><h3>Agents, API, integration · Claude Code + Codex</h3><ul><li><code>api/</code>, <code>contracts/</code>, root files, scripts</li><li>Algae data factory, Safeguard agent + tools</li><li>Zero-day job, reef reports, SSE</li><li>Runs merge windows, hosts the demo</li></ul></div>
+    <div class="panel"><span class="k green">Member C · Leaf Sheep</span><h3>UI + Photon · Codex</h3><ul><li><code>web/</code>, <code>bridge/</code>, theme, pitch assets</li><li>Phone UI, Trajectory HUD, Reef Lab</li><li>On-device runtime (transformers.js + ONNX)</li><li>Photon bridge, demo video, Devpost copy</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <h2><small>04 · The clock</small>H0 = 6:00 PM Saturday</h2>
+  <p class="intro">Shift every time if you start later. Each gate is a 15-minute merge window run by B.</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Hour</th><th>Clock</th><th>A · Dragonfly</th><th>B · Algae</th><th>C · Leaf Sheep</th></tr></thead>
+      <tbody>
+        <tr><td>H0–1</td><td>6–7 PM</td><td>Tools, <code>ml/</code> skeleton, stub model</td><td>Repo from kit, branches, contracts call</td><td>Photon signup first, Vite + theme</td></tr>
+        <tr class="gate"><td>M0</td><td>7:00 PM</td><td colspan="3">Smoke green on all 3 laptops · contracts frozen</td></tr>
+        <tr><td>H1–4</td><td>7–10 PM</td><td>Splitter, embeddings, baselines</td><td>Algae v1 (300 convs by 8:30), tools + tests</td><td>Phone shell, HUD, compass, Photon echo</td></tr>
+        <tr class="gate"><td>Devpost</td><td>≤ 10:45 PM</td><td colspan="3">Placeholder entry submitted (initial deadline 11 PM)</td></tr>
+        <tr class="gate"><td>M1</td><td>10:00 PM</td><td colspan="3">Data v1 + baseline numbers + UI shell + Photon echo</td></tr>
+        <tr><td>H4–7</td><td>10 PM–1 AM</td><td>PreyNet ×3 seeds, calibration, lock-on, eval v2</td><td>Safeguard agent loop, real model in API</td><td>Bridge → API → reply codes, Reef charts</td></tr>
+        <tr class="gate"><td>M2</td><td>1:00 AM</td><td colspan="3">Photon forward → forecast → safety card, end to end</td></tr>
+        <tr><td>H7–9:30</td><td>1–3:30 AM</td><td>Chloroplast, zero-day experiment, ONNX parity</td><td>Zero-day job + SSE, reef reports</td><td>Browser runtime, leaf-sheep badges</td></tr>
+        <tr class="gate"><td>M3</td><td>3:30 AM</td><td colspan="3">Live zero-day on device · no message text on the network</td></tr>
+        <tr class="gate"><td>Freeze</td><td>4:00 AM</td><td colspan="3">Fixes only from here</td></tr>
+        <tr><td>H10–11</td><td>4–5 AM</td><td>Final eval, leakage check</td><td>Clean-clone run on a 2nd laptop</td><td>Demo video, Devpost copy</td></tr>
+        <tr class="gate"><td>M4 · Submit</td><td>5–6 AM</td><td colspan="3">Final merge, tag, final Devpost (editable until 12 PM) · sleep in shifts · rehearse 10–11:30 AM</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2><small>05 · No merge hell</small>Eight rules, enforced by the repo itself</h2>
+  <ol class="rules">
+    <li><strong>Ownership by folder</strong>, blocked by a pre-commit hook in every worktree (tested), plus CODEOWNERS and CI.</li>
+    <li><strong>No shared progress file.</strong> Each member logs to <code>progress/X.md</code>; only B edits <code>PROGRESS.md</code>.</li>
+    <li><strong>Contracts first</strong>: 7 JSON Schemas, frozen at M0, additive-only after.</li>
+    <li><strong>Mocks from hour one</strong>: stub model, mock API, mock UI data. Nobody waits.</li>
+    <li><strong>No root manifests.</strong> One lockfile per service, one owner each.</li>
+    <li><strong>One writer per artifact</strong>: B writes datasets, A writes model files. Both get express-lane PRs.</li>
+    <li><strong>Merge commits only</strong> on GitHub (squash breaks the next rebase). Fixed order: contracts → ml → api → web/bridge.</li>
+    <li><strong>Red smoke means a 10-minute fix or a revert.</strong> Never debug on main.</li>
+  </ol>
+</section>
+
+<section>
+  <h2><small>06 · Agents</small>Model and effort per feature</h2>
+  <p class="intro">Each feature gets its own T3 Code thread in its own worktree, max 3 threads per person. Ponytail keeps the code small; ECC handles plan → review. Check <code>/model</code> for the exact names on your account.</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Who</th><th>Feature</th><th>Tool · model</th><th>Effort</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag a">A</span></td><td><strong>PreyNet + training</strong>, metrics, calibration, chloroplast</td><td>Claude Code · Opus 5.5</td><td>high</td></tr>
+        <tr><td><span class="tag a">A</span></td><td>Splitter + leakage test, ONNX parity</td><td>Claude Code · Sonnet 5.5</td><td>high</td></tr>
+        <tr><td><span class="tag a">A</span></td><td>Baselines, experiments, independent metric cross-check</td><td>Codex · GPT-6 Sol</td><td>medium / high</td></tr>
+        <tr><td><span class="tag b">B</span></td><td><strong>Safeguard tool loop</strong>, merge-window debugging</td><td>Claude Code · Opus 5.5</td><td>high</td></tr>
+        <tr><td><span class="tag b">B</span></td><td>Algae factory, zero-day job</td><td>Claude Code · Sonnet 5.5</td><td>high</td></tr>
+        <tr><td><span class="tag b">B</span></td><td>API skeleton, tools + tests</td><td>Codex · GPT-6 Sol</td><td>medium / high</td></tr>
+        <tr><td><span class="tag c">C</span></td><td><strong>On-device runtime</strong> (transformers.js + onnxruntime-web)</td><td>Codex · GPT-6 Sol</td><td>xhigh</td></tr>
+        <tr><td><span class="tag c">C</span></td><td>Photon bridge, phone UI, HUD, compass</td><td>Codex · GPT-6 Sol</td><td>high</td></tr>
+        <tr><td><span class="tag c">C</span></td><td>Reef charts, avatar · Devpost copy</td><td>Codex · Sol / Luna</td><td>medium</td></tr>
+        <tr><td><span class="tag x">Sub</span></td><td>data-auditor · leakage-hunter · eval-runner · contract-guardian</td><td>Haiku · Opus · Sonnet · Haiku</td><td>–</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2><small>07 · Tracks</small>One product, three scorecards</h2>
+  <div class="grid">
+    <div class="panel"><span class="k pink">T-Mobile · Safe Signal</span><p><strong style="color:var(--cream)">Before</strong>: forecast at turn 1–2. <strong style="color:var(--cream)">During</strong>: locked links, Cool-Down Shield, verified official numbers. <strong style="color:var(--cream)">After</strong>: consented report → reef → chloroplast for everyone. Calibrated confidence, on-device privacy, our own synthetic data.</p></div>
+    <div class="panel"><span class="k green">NVIDIA · Nemotron beyond a chatbot</span><p>No chat window. Two multi-step agents: the Algae red-team factory (plan → generate → critique → dedupe → train) and the Safeguard agent (4 real tools → schema-valid card). Nemotron is the teacher in a distillation pipeline.</p></div>
+    <div class="panel"><span class="k">Photon</span><p>A real iMessage/SMS number: forward a thread, get the forecast and safety card back, reply 1/2/3 to act. Per-thread memory, edge cases handled, anyone can text it tomorrow.</p></div>
+  </div>
+  <p class="note" style="margin-top:14px">Check the Hackerpack or Discord at H0 for a limit on sponsor tracks. If it's two, submit to T-Mobile + NVIDIA and keep Photon in the demo.</p>
+</section>
+
+<section>
+  <h2><small>08 · The kit</small>Files in the repo starter</h2>
+  <div class="files">
+    <div><b>AGENTS.md · CLAUDE.md</b>Rules for every agent; CLAUDE.md imports AGENTS.md</div>
+    <div><b>docs/MODEL_SPEC.md</b>Data, PreyNet, calibration, chloroplasts, eval, biology, the gap</div>
+    <div><b>docs/PLAYBOOK.md</b>Stack, setup per laptop, merge protocol, demo, risks</div>
+    <div><b>docs/PROMPTS.md</b>Master prompt + per-member, per-phase prompts</div>
+    <div><b>PROGRESS.md · progress/A|B|C.md</b>Phase gates + per-member logs</div>
+    <div><b>contracts/</b>7 schemas, examples, taxonomy.json</div>
+    <div><b>scripts/</b>Ownership hook, contract validator, merge-window helper</div>
+    <div><b>docs/THEME.md · zero-day.css</b>Fonts and colors pulled from the deck</div>
+  </div>
+</section>
+
+<footer>
+  Sources: Mischiati et al. 2015 (Nature 517) · Gonzalez-Bellido et al. 2013 (PNAS) · Wiederman &amp; O'Carroll 2013 (Curr Biol) · Lancer et al. 2019 (J Neurosci) · Christa et al. 2014 (J Molluscan Stud) · HackUTD 2026 opening deck · ECC (github.com/affaan-m/ECC) · Ponytail (ponytail.dev) · T3 Code (github.com/pingdotgg/t3code).
+</footer>
+</div>

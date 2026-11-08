@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "event.schema.json",
+  "title": "Event",
+  "description": "Server-sent event on GET /v1/events (text/event-stream, one JSON object per `data:` line). Drives the live /reef dashboard.",
+  "type": "object",
+  "required": ["type", "ts", "data"],
+  "additionalProperties": false,
+  "properties": {
+    "type": {"enum": ["photon.message", "score", "card", "algae.progress", "train.progress", "chloroplast.ready", "reef.report", "error"]},
+    "ts": {"type": "string", "format": "date-time"},
+    "job_id": {"type": "string"},
+    "data": {
+      "type": "object",
+      "description": "photon.message: {thread_id, sender, preview(<=60 chars, masked)}; score: ScoreResponse; card: SafetyCard; algae.progress: {stage: plan|generate|critique|dedupe, done, total, sample?}; train.progress: {step, total, loss}; chloroplast.ready: ChloroplastManifest without weights; reef.report: {family_guess}; error: {message}"
+    }
+  }
+}

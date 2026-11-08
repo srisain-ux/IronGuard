@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "families": [
+    {"id": "benign", "label": "Not a scam", "compass_deg": null, "description": "Normal conversation, including look-alikes of scam openings that stay legitimate."},
+    {"id": "pig_butchering", "label": "Relationship / crypto (pig butchering)", "compass_deg": 0, "description": "Wrong-number or friendly opener, rapport building over days, then a crypto or investment platform pitch and deposit request."},
+    {"id": "bank_impersonation", "label": "Bank impersonation", "compass_deg": 60, "description": "Fake fraud alert from a bank; pushes the victim to call a number, read back a one-time code, or move money to a 'safe account'."},
+    {"id": "family_emergency", "label": "Family emergency ('Hi Mom')", "compass_deg": 120, "description": "Claims to be a relative on a new number; builds urgency (broken phone, trouble) then asks for money or gift cards."},
+    {"id": "job_task", "label": "Fake job / task scam", "compass_deg": 180, "description": "Unsolicited remote job offer; easy 'tasks' with small payouts, then the victim must pay or deposit to unlock earnings. HELD OUT for the zero-day experiment."},
+    {"id": "toll_delivery", "label": "Toll / delivery fee", "compass_deg": 240, "description": "Unpaid toll, parcel hold or customs fee; short urgency then a payment link."},
+    {"id": "carrier_support", "label": "Carrier / tech support", "compass_deg": 300, "description": "Impersonates a carrier or tech support (account suspended, SIM issue); goal is a one-time code, account PIN or remote access."}
+  ],
+  "zero_day_prefix": "zd_",
+  "stages": [
+    {"id": "benign", "label": "Benign"},
+    {"id": "bait", "label": "Bait: first contact"},
+    {"id": "pivot", "label": "Pivot: rapport / identity"},
+    {"id": "hook", "label": "Hook: pretext / urgency"},
+    {"id": "strike", "label": "Strike: link, money, code or gift-card ask"}
+  ],
+  "tts_buckets": ["0", "1", "2", "3+", "none"],
+  "senders": ["them", "me"],
+  "channels": ["sms", "imessage", "rcs", "whatsapp", "email", "other"],
+  "brands_demo_only": ["T-Mobile", "PNC", "Capital One", "Chase", "USPS", "NTTA TollTag", "UT Dallas Parking", "Amazon"],
+  "ports": {"api": 8000, "web": 5173, "bridge": 8787}
+}

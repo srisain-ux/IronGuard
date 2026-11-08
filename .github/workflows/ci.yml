@@ -1,0 +1,19 @@
+name: ci
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  contracts-and-ownership:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: astral-sh/setup-uv@v5
+      - run: uv run --with jsonschema python scripts/validate_contracts.py
+      - name: ownership (PR head branch prefix a/ b/ c/ decides the member)
+        run: |
+          prefix="${GITHUB_HEAD_REF%%/*}"
+          case "$prefix" in a) m=A;; b) m=B;; c) m=C;; *) echo "branch must start with a/, b/ or c/"; exit 1;; esac
+          git config ironguard.member "$m"
+          git reset --soft "$(git merge-base origin/main HEAD)"   # stage exactly this branch's changes
+          ./scripts/check_ownership.sh

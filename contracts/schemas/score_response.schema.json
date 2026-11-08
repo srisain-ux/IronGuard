@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "score_response.schema.json",
+  "title": "ScoreResponse",
+  "description": "PreyNet forecast for a conversation prefix. Produced by ironguard_ml.infer (Python) and by the browser runtime (JS); both must emit this exact shape.",
+  "type": "object",
+  "required": ["risk", "confidence_band", "family", "family_probs", "next_stage", "turns_to_strike", "locked", "attention", "evidence", "model"],
+  "additionalProperties": false,
+  "properties": {
+    "risk": {"type": "number", "minimum": 0, "maximum": 1, "description": "Calibrated P(conversation is on a scam trajectory) = 1 - P(benign)."},
+    "confidence_band": {"enum": ["low", "uncertain", "high"]},
+    "family": {
+      "type": "object",
+      "required": ["id", "label", "p"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string"},
+        "label": {"type": "string"},
+        "p": {"type": "number", "minimum": 0, "maximum": 1},
+        "source": {"enum": ["base", "chloroplast"], "default": "base"}
+      }
+    },
+    "family_probs": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}},
+    "next_stage": {
+      "type": "object",
+      "required": ["stage", "p"],
+      "additionalProperties": false,
+      "properties": {
+        "stage": {"enum": ["benign", "bait", "pivot", "hook", "strike"]},
+        "p": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "turns_to_strike": {
+      "type": "object",
+      "required": ["bucket", "p"],
+      "additionalProperties": false,
+      "properties": {
+        "bucket": {"enum": ["0", "1", "2", "3+", "none"]},
+        "p": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "locked": {"type": "boolean", "description": "CSTMD1-style lock-on (hysteresis) state after this turn."},
+    "attention": {"type": "array", "items": {"type": "number", "minimum": 0, "maximum": 1}, "description": "One weight per turn seen; sums to ~1."},
+    "evidence": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["turn_idx", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "turn_idx": {"type": "integer", "minimum": 0},
+          "reason": {"type": "string", "maxLength": 140}
+        }
+      }
+    },
+    "chloroplast_hits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "p", "fired"],
+        "additionalProperties": false,
+        "properties": {"id": {"type": "string"}, "p": {"type": "number"}, "fired": {"type": "boolean"}}
+      }
+    },
+    "model": {
+      "type": "object",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {"enum": ["preynet", "stub"]},
+        "version": {"type": "string"},
+        "runtime": {"enum": ["python", "browser"]},
+        "latency_ms": {"type": "number"}
+      }
+    }
+  }
+}

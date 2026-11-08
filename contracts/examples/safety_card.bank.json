@@ -1,0 +1,14 @@
+{"verdict":"likely_scam","confidence":0.91,"confidence_band":"high",
+ "headline":"This number is not PNC's. Don't call it.",
+ "why":["Claims to be PNC fraud team but uses an unlisted number","Asks you to call back urgently (classic bank-impersonation hook)"],
+ "entities":{"brands":["PNC"],"phones":["+1-888-555-0199"],"urls":[]},
+ "checks":[
+  {"tool":"lookup_official_contact","input":"PNC","ok":true,"summary":"Official PNC number found in directory","data":{"official_phone":"see data/official_directory.json"}},
+  {"tool":"check_number","input":"+1-888-555-0199","ok":false,"summary":"Not in PNC's official contact list; 555-01xx is a fictional range"}],
+ "next_steps":[
+  {"id":"call_official","label":"Call PNC's official number","reply_code":"2","action":"call_official","payload":{"brand":"PNC"}},
+  {"id":"report","label":"Block and report anonymously","reply_code":"1","action":"block_report"},
+  {"id":"explain","label":"Explain why this was flagged","reply_code":"3","action":"learn_more"}],
+ "locked_links":["+1-888-555-0199"],
+ "cool_down":true,
+ "privacy_note":"Only the brand name and phone number left your device. Your message text did not."}
