@@ -1,0 +1,2 @@
+{"consent":true,"channel":"sms","family_guess":"bank_impersonation","stage_sequence":["bait","hook","strike"],
+ "template_text":"[BRAND] Fraud Dept: unusual charge of [AMOUNT] detected. Call [PHONE] immediately to secure your account.","source":"photon"}

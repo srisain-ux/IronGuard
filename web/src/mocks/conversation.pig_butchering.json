@@ -1,0 +1,11 @@
+{"id":"ex_pb_0001","family":"pig_butchering","channel":"sms","hard_negative":false,
+ "turns":[
+  {"sender":"them","text":"Hey, are we still on for golf tomorrow at 9?","stage":"bait"},
+  {"sender":"me","text":"I think you have the wrong number","stage":"bait"},
+  {"sender":"them","text":"Oh so sorry! My assistant must have typed it wrong. You seem nice though, I'm Anna, I just moved to Dallas","stage":"pivot"},
+  {"sender":"me","text":"haha no worries, welcome to Dallas","stage":"pivot"},
+  {"sender":"them","text":"Thank you! I work in digital asset trading, my uncle taught me a strategy that made 30% this month","stage":"hook"},
+  {"sender":"them","text":"I can show you, just open an account on coinvault-pro.example and start with $500","stage":"strike"}
+ ],
+ "strike_turn":5,"split":"train",
+ "source":{"generator":"nemotron","model":"nvidia/nemotron-3-nano-30b-a3b","prompt_id":"gen_v1","seed":7,"critic_realism":4.5}}
