@@ -19,9 +19,9 @@ The full model spec is in `docs/MODEL_SPEC.md`. **Do not invent model behavior t
 
 | Member | Codename | Tools | Owns (only these paths) |
 |---|---|---|---|
-| **A** | Dragonfly (ML lead) | Claude Code + Codex | `ml/`, `data/seed/`, `data/test_human/`, `docs/MODEL_SPEC.md`, `progress/A.md` |
-| **B** | Algae (agent, API, integration lead) | Claude Code + Codex | `api/`, `contracts/`, `data/generated/`, `scripts/`, `.claude/`, `.github/`, root files (`AGENTS.md`, `CLAUDE.md`, `PROGRESS.md`, `Makefile`, `README.md`, `.gitignore`, `.gitattributes`, `.env.example`), `docs/PLAYBOOK.md`, `docs/PROMPTS.md`, `progress/B.md` |
-| **C** | Leaf Sheep (UI, Photon) | Codex | `web/`, `bridge/`, `docs/THEME.md`, `docs/pitch/`, `progress/C.md` |
+| **A · double** | Dragonfly (ML lead) | Claude Code + Codex | `ml/`, `data/seed/`, `data/test_human/`, `docs/MODEL_SPEC.md`, `progress/A.md` |
+| **B · ss** | Algae (agent, API, integration lead) | Claude Code + Codex | `api/`, `contracts/`, `data/generated/`, `scripts/`, `.claude/`, `.github/`, root files (`AGENTS.md`, `CLAUDE.md`, `PROGRESS.md`, `Makefile`, `README.md`, `.gitignore`, `.gitattributes`, `.env.example`), `docs/PLAYBOOK.md`, `docs/PROMPTS.md`, `progress/B.md` |
+| **C · jcubed** | Leaf Sheep (UI, Photon) | Codex | `web/`, `bridge/`, `docs/THEME.md`, `docs/pitch/`, `progress/C.md` |
 
 - **Never create, edit, move or delete a file outside your member's paths.** The hook (`scripts/check_ownership.sh`) blocks such commits.
 - Need something changed in another area? Add a line under `## Requests` in **your own** `progress/<you>.md`, naming the owner and the exact change. Then keep working against the mock.

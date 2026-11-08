@@ -1,4 +1,4 @@
-# progress/C.md: Member C, Leaf Sheep (UI + Photon)
+# progress/C.md: Member C (jcubed), Leaf Sheep (UI + Photon)
 
 > Only member C (and their agents) edits this file. Append; don't rewrite history.
 > Format for each entry: `[HH:MM][P<phase>] what changed | skipped | unverified`
