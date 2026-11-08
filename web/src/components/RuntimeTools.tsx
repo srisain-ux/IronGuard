@@ -16,7 +16,7 @@ export function DebugParity() {
     setBusy(true); setComparison(null);
     // The only POST is the bundled public example, regardless of the phone's text.
     const [local, api] = await Promise.allSettled([
-      scoreLocal(example.turns.slice(0, 3) as Turn[], [], setStatus), scoreExampleWithApi(),
+      scoreLocal(example.turns as Turn[], [], setStatus), scoreExampleWithApi(),
     ]);
     if (local.status === "fulfilled" && api.status === "fulfilled") {
       const result = compareScores(local.value.at(-1)!, api.value);
@@ -25,7 +25,7 @@ export function DebugParity() {
     } else setStatus(`UNVERIFIED · ${local.status === "rejected" ? "Browser artifacts unavailable. " : ""}${api.status === "fulfilled" ? `API ${api.value.model.name} risk ${api.value.risk.toFixed(4)}. ` : "API unavailable. "}Real PreyNet comparison pending.`);
     setBusy(false);
   }
-  return <section className="zd-panel runtime-tools"><h2>Browser / API parity</h2><p>Only the first three turns of the bundled public example are sent to the API. Adapters are disabled on both sides. Tolerance: ±0.02.</p><button disabled={busy} onClick={() => void compare()}>Compare public example</button><p role="status">{status}</p>{comparison && <><p>Labels / lock: {comparison.labelsMatch ? "agree" : "differ"}</p><div className="parity-scroll"><table><thead><tr><th>Score</th><th>Browser</th><th>API</th><th>Δ</th></tr></thead><tbody>{comparison.rows.map(row => <tr key={row.field}><th>{row.field}</th><td>{row.browser?.toFixed(4) ?? "--"}</td><td>{row.api?.toFixed(4) ?? "--"}</td><td>{Number.isFinite(row.delta) ? row.delta.toFixed(4) : "--"}</td></tr>)}</tbody></table></div></>}</section>;
+  return <section className="zd-panel runtime-tools"><h2>Browser / API parity</h2><p>Only the bundled public example thread is sent to the API. Adapters are disabled on both sides. Tolerance: ±0.02.</p><button disabled={busy} onClick={() => void compare()}>Compare public example</button><p role="status">{status}</p>{comparison && <><p>Labels / lock: {comparison.labelsMatch ? "agree" : "differ"}</p><div className="parity-scroll"><table><thead><tr><th>Score</th><th>Browser</th><th>API</th><th>Δ</th></tr></thead><tbody>{comparison.rows.map(row => <tr key={row.field}><th>{row.field}</th><td>{row.browser?.toFixed(4) ?? "--"}</td><td>{row.api?.toFixed(4) ?? "--"}</td><td>{Number.isFinite(row.delta) ? row.delta.toFixed(4) : "--"}</td></tr>)}</tbody></table></div></>}</section>;
 }
 export function LocalMessage({ manifests }: { manifests: ChloroplastManifest[] }) {
   const [text, setText] = useState("");

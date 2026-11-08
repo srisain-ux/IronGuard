@@ -81,7 +81,7 @@ export async function scoreExampleWithApi(): Promise<ScoreResponse> {
   if (useMocks) return structuredClone(scoreMock) as ScoreResponse;
   const response = await fetch(`${apiUrl}/v1/score`, {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ turns: exampleThread.turns.slice(0, 3).map(({ sender, text }) => ({ sender, text })), chloroplast_ids: [] }),
+    body: JSON.stringify({ turns: exampleThread.turns.map(({ sender, text }) => ({ sender, text })), chloroplast_ids: [] }),
   });
   if (!response.ok) throw new Error(`Example comparison failed (${response.status})`);
   return response.json() as Promise<ScoreResponse>;
