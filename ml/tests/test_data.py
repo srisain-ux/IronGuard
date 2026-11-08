@@ -1,4 +1,6 @@
 import json
+from collections import defaultdict
+from dataclasses import replace
 
 import numpy as np
 import pytest
@@ -100,6 +102,22 @@ def test_split_is_deterministic_and_independent_of_input_order():
 
     assert a == b
     assert a != c
+
+
+def test_conversations_sharing_a_generator_seed_stay_in_one_split():
+    pop = [
+        replace(c, seed=i // 4) if c.family == "pig_butchering" else c
+        for i, c in enumerate(population())
+    ]
+
+    splits = stratified_split(pop, seed=0)
+
+    seed_splits = defaultdict(set)
+    for name, convs in splits.items():
+        for c in convs:
+            if c.seed is not None:
+                seed_splits[c.seed].add(name)
+    assert all(len(s) == 1 for s in seed_splits.values())
 
 
 def test_tiny_stratum_still_has_a_train_conversation():

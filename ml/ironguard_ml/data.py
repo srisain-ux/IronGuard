@@ -46,6 +46,7 @@ class Conversation:
     strike_turn: int | None
     hard_negative: bool
     generator: str
+    seed: int | None = None  # Algae call seed: siblings from one call share it and must not be split
 
 
 @dataclass(frozen=True)
@@ -95,6 +96,7 @@ def _parse(record: dict, where: str) -> Conversation:
         strike_turn=strike,
         hard_negative=record.get("hard_negative", False),
         generator=record["source"]["generator"],
+        seed=record["source"].get("seed"),
     )
 
 
@@ -207,8 +209,10 @@ def stratified_split(
     """Conversation-level 70/15/15 split stratified by family (hard negatives are their own stratum).
 
     Any `split` field on incoming records is ignored: A owns the splits. Output depends only on
-    the set of conversations and the seed, not on input order. Train always gets at least one
-    member per stratum, but val or test can be empty for strata under about 7 conversations.
+    the set of conversations and the seed, not on input order. Conversations sharing a
+    `source.seed` (one generator call) always land in the same split, so quotas are approximate;
+    a conversation without a seed is its own group. Train always gets at least one member per
+    stratum, but val or test can be empty for strata under about 7 conversations.
     Keep `seed` fixed across training seeds (0/1/2). Quotas shift as the corpus grows, so refit
     after any new data lands; never score a model fit on an older snapshot against a newer split.
     """
@@ -218,12 +222,19 @@ def stratified_split(
     out: dict[str, list[Conversation]] = {name: [] for name, _ in SPLIT_FRACTIONS}
     for key in sorted(strata):
         members = sorted(strata[key], key=lambda c: c.id)
+        # conversations from one generator call share a seed and a prompt: keep them together
+        groups: dict[object, list[Conversation]] = defaultdict(list)
+        for conv in members:
+            groups[conv.id if conv.seed is None else conv.seed].append(conv)
+        ordered = list(groups.values())
         rng = random.Random(f"{seed}:{key}")
-        rng.shuffle(members)
-        start = 0
-        for (name, _), count in zip(SPLIT_FRACTIONS, _quotas(len(members), rng)):
-            out[name].extend(members[start : start + count])
-            start += count
+        rng.shuffle(ordered)
+        room = _quotas(len(members), rng)
+        for group in ordered:
+            # biggest remaining room first; a group never straddles splits (train wins ties)
+            i = max(range(len(room)), key=lambda j: (room[j], -j))
+            out[SPLIT_FRACTIONS[i][0]].extend(group)
+            room[i] -= len(group)
     return {name: tuple(items) for name, items in out.items()}
 
 
