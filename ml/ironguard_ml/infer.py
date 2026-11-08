@@ -6,6 +6,7 @@ Customer text is embedded in memory only: nothing derived from it is written to 
 
 import base64
 import json
+import logging
 import re
 import time
 from collections.abc import Sequence
@@ -24,6 +25,7 @@ BAND_HIGH, BAND_LOW, UNCERTAIN_RISK, UNCERTAIN_FAMILY_P = 0.80, 0.10, 0.35, 0.5 
 MAX_EVIDENCE = 3
 BENIGN = FAMILIES.index("benign")
 LABELS = {f["id"]: f["label"] for f in TAXONOMY["families"]}
+log = logging.getLogger(__name__)
 
 _I = re.IGNORECASE
 EVIDENCE_RULES = (  # checked in order; the first match names the reason for a turn
@@ -49,6 +51,7 @@ def lock_states(risks: Sequence[float], senders: Sequence[str], theta_lock: floa
                 theta_release: float = THETA_RELEASE, release_turns: int = RELEASE_TURNS) -> list[bool]:
     """CSTMD1 lock-on per prefix: lock at risk >= θ_lock; release only after `release_turns`
     consecutive scammer ("them") turns below θ_release. "me" turns never move the counter."""
+    theta_release = min(theta_release, theta_lock)
     locked, below, states = False, 0, []
     for risk, sender in zip(risks, senders, strict=True):
         if not locked:
@@ -117,6 +120,8 @@ class Model:
     def __init__(self, net: PreyNet, temperatures: dict, encoder: Encoder, version: str):
         self.net = net.eval()
         self.temperatures = temperatures
+        # θ_lock tuned on VAL (§4.6) = the 1%-FPR operating point the reported metrics use.
+        self.theta_lock = float(temperatures.get("theta_lock", THETA_LOCK))
         self.encoder = encoder
         self.version = version
 
@@ -131,12 +136,22 @@ class Model:
             stage = torch.softmax(out["stage_logits"][-1] / self.temperatures["next_stage"], dim=0)
             tts = torch.softmax(out["tts_logits"][-1] / self.temperatures["tts"], dim=0)
             effective = 1 - family[:, BENIGN]
+            lock_risk = effective.clone()  # a fired adapter is a detection, so it locks too
             hits, best_cp = [], None
             for cp in chloroplasts or []:
-                p = chloroplast_probs(cp, out["features"])
-                fired = p >= cp["threshold"]
+                try:
+                    cp_id, threshold = str(cp["id"]), float(cp["threshold"])
+                    p = chloroplast_probs(cp, out["features"])
+                    if not torch.isfinite(p).all():
+                        raise ValueError("non-finite output")
+                except (AttributeError, KeyError, TypeError, ValueError) as exc:
+                    # One broken adapter must never switch off base protection (§5.2).
+                    log.warning("skipping a malformed chloroplast: %s", exc)
+                    continue
+                fired = p >= threshold
                 effective = torch.where(fired, torch.maximum(effective, p), effective)
-                hits.append({"id": cp["id"], "p": float(p[-1]), "fired": bool(fired[-1])})
+                lock_risk = torch.where(fired, torch.clamp(lock_risk, min=self.theta_lock), lock_risk)
+                hits.append({"id": cp_id, "p": float(p[-1]), "fired": bool(fired[-1])})
                 if fired[-1] and (best_cp is None or p[-1] > best_cp[1]):
                     best_cp = (cp, float(p[-1]))
         risks = effective.clamp(0, 1).tolist()
@@ -156,7 +171,8 @@ class Model:
             "family_probs": base_probs,
             "next_stage": {"stage": STAGES[int(stage.argmax())], "p": float(stage.max())},
             "turns_to_strike": {"bucket": TTS_BUCKETS[int(tts.argmax())], "p": float(tts.max())},
-            "locked": lock_states(risks, [t.sender for t in parsed])[-1],
+            "locked": lock_states(lock_risk.tolist(), [t.sender for t in parsed],
+                                  self.theta_lock)[-1],
             "attention": attention,
             "evidence": evidence(parsed, attention),
             "chloroplast_hits": hits,
@@ -177,6 +193,6 @@ def load(artifacts_dir, encoder: Encoder | None = None) -> Model:
     net = PreyNet(**checkpoint["config"])
     net.load_state_dict(checkpoint["state_dict"])
     temperatures = json.loads(temps.read_text())
-    if set(temperatures) != {"family", "next_stage", "tts"}:
+    if not {"family", "next_stage", "tts"} <= set(temperatures):
         raise ValueError(f"{temps} must have family, next_stage and tts temperatures")
     return Model(net, temperatures, encoder or minilm_encoder(), checkpoint["meta"]["version"])

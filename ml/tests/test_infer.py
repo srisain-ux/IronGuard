@@ -64,6 +64,30 @@ def test_zero_chloroplast_reported_but_never_fires(model):
     assert result["family"]["source"] == "base"
 
 
+def test_broken_chloroplast_is_skipped_not_fatal(model):
+    good = chloroplast_train([], [], "zd_test", "Test", "alert")
+    broken = {**good, "id": "cp_broken", "hidden_dim": 5}
+    no_id = {k: v for k, v in good.items() if k != "id"}
+    result = model.score([{"sender": "them", "text": "hi"}],
+                         chloroplasts=[broken, "not a manifest", no_id, good])
+    validate(result, "score_response")
+    assert [h["id"] for h in result["chloroplast_hits"]] == [good["id"]]
+
+
+def test_fired_chloroplast_wins_and_locks(model):
+    manifest = chloroplast_train([], [], "zd_test", "Test", "alert")
+    b2 = base64.b64encode(np.array([3.0], "<f4").tobytes()).decode()  # p = sigmoid(3) ~ .95
+    fired = {**manifest, "threshold": 0.6, "weights": {**manifest["weights"], "b2": b2}}
+    model.theta_lock = 0.99  # VAL-tuned lock above the adapter's p must still lock
+    try:
+        result = model.score([{"sender": "them", "text": "hi"}], chloroplasts=[fired])
+    finally:
+        model.theta_lock = 0.70
+    validate(result, "score_response")
+    assert result["chloroplast_hits"][0]["fired"] is True
+    assert result["family"]["source"] == "chloroplast" and result["locked"] is True
+
+
 def test_chloroplast_math_matches_formula():
     rng = np.random.default_rng(0)
     w1, b1 = rng.normal(size=(4, FEATURE_DIM)).astype("<f4"), rng.normal(size=4).astype("<f4")
@@ -114,3 +138,16 @@ def test_rejects_bad_turns(model, turns):
 def test_missing_artifacts_fail_loudly(tmp_path):
     with pytest.raises(FileNotFoundError, match="make train"):
         load(tmp_path, encoder=fake_encoder)
+
+
+def test_val_tuned_theta_lock_drives_locked(tmp_path):
+    torch.manual_seed(0)
+    net = PreyNet()
+    torch.save({"state_dict": net.state_dict(), "config": net.config,
+                "meta": {"version": "test"}}, tmp_path / "preynet.pt")
+    temps = {"family": 1.0, "next_stage": 1.0, "tts": 1.0}
+    turns = [{"sender": "them", "text": "hi"}]
+    for theta, expected in ((0.0, True), (1.01, False)):
+        (tmp_path / "temperature.json").write_text(json.dumps({**temps, "theta_lock": theta}))
+        assert load(tmp_path, encoder=fake_encoder).score(turns)["locked"] is expected
+    assert lock_states([.3, .1], ["them"] * 2, theta_lock=.2) == [True, True]  # release <= lock

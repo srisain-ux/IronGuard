@@ -1,7 +1,8 @@
-"""Multi-task PreyNet training (MODEL_SPEC §4.3–§4.5): TRAIN fits, VAL early-stops and calibrates.
+"""Multi-task PreyNet training (MODEL_SPEC §4.3–§4.6): TRAIN fits, VAL early-stops and calibrates.
 
 `make train` trains seeds 0/1/2, ships the best VAL EWR@2 seed to artifacts/preynet.pt and
-writes VAL-fitted temperatures to artifacts/temperature.json. TEST is never read here.
+writes VAL-fitted temperatures plus the VAL-tuned θ_lock to artifacts/temperature.json.
+TEST is never read here.
 """
 
 import argparse
@@ -189,6 +190,10 @@ def temperatures(net: PreyNet, val: PrefixData) -> dict[str, float]:
     }
 
 
+def calibrated_val_rows(net: PreyNet, val: PrefixData, temperature: float):
+    return scored(val.conversations, risks(predict(net, val)["family_logits"], temperature))
+
+
 def load_splits(data: Path):
     """(splits, near-duplicate ids, version) for data/seed or data/generated/<version>."""
     data = data.resolve()
@@ -233,6 +238,8 @@ def main():
               f"VAL NLL {f.val_nll:.3f}")
     best = best_of(fits)
     temps = temperatures(best.net, val)
+    # θ_lock tuned on VAL (§4.6): the same 1%-FPR operating point the reported metrics use.
+    temps["theta_lock"] = threshold_at_fpr(calibrated_val_rows(best.net, val, temps["family"]))
     save(best, temps, args.out, version or "seed-smoke")
     print(f"Wrote {args.out / 'preynet.pt'} (seed {best.seed}) and temperature.json {temps}")
 

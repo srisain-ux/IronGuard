@@ -49,7 +49,7 @@ def test_first_turn_strike_and_last_chance_warning():
 def test_undefined_is_null():
     assert summarize([], .5) == {
         "ewr_at_k": [None] * 6, "lead_time": None,
-        "strike_recall": None, "hard_neg_fpr": None,
+        "strike_recall": None, "hard_neg_fpr": None, "fpr": None,
     }
     with pytest.raises(ValueError, match="benign VAL"):
         threshold_at_fpr([row([1], 0)])

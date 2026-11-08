@@ -42,6 +42,13 @@ def _l2_normalize(vectors: np.ndarray) -> np.ndarray:
     return (vectors / np.maximum(norms, 1e-12)).astype(np.float32)
 
 
+def _encode(texts: list[str], encoder: Encoder | None) -> np.ndarray:
+    vectors = _l2_normalize(np.asarray((encoder or minilm_encoder())(texts), dtype=np.float32))
+    if vectors.shape != (len(texts), EMB_DIM):
+        raise ValueError(f"encoder returned {vectors.shape}, expected {(len(texts), EMB_DIM)}")
+    return vectors
+
+
 def _save_atomic(path: Path, vector: np.ndarray) -> None:
     fd, tmp = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
     try:
@@ -81,19 +88,13 @@ def embed_texts(
     if not texts:
         return np.zeros((0, EMB_DIM), dtype=np.float32)
     if cache_dir is None:
-        vectors = _l2_normalize(np.asarray((encoder or minilm_encoder())(list(texts)), np.float32))
-        if vectors.shape != (len(texts), EMB_DIM):
-            raise ValueError(f"encoder returned {vectors.shape}, expected {(len(texts), EMB_DIM)}")
-        return vectors
+        return _encode(list(texts), encoder)
     cache_dir.mkdir(parents=True, exist_ok=True)
     paths = [cache_dir / f"{cache_key(t, model_id)}.npy" for t in texts]
     vectors = {p: _load_cached(p) for p in set(paths)}
     misses = {p: t for p, t in zip(paths, texts) if vectors[p] is None}
     if misses:
-        encode = encoder or minilm_encoder()
-        fresh = _l2_normalize(np.asarray(encode(list(misses.values())), dtype=np.float32))
-        if fresh.shape != (len(misses), EMB_DIM):
-            raise ValueError(f"encoder returned {fresh.shape}, expected {(len(misses), EMB_DIM)}")
+        fresh = _encode(list(misses.values()), encoder)
         for path, vector in zip(misses, fresh):
             _save_atomic(path, vector)
             vectors[path] = vector

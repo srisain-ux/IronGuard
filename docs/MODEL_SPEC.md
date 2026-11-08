@@ -105,7 +105,7 @@ Every conversation of length n yields n prefixes (turns 1..k for k = 1..n). Labe
 - Report **ECE (15 bins)** before and after, plus a reliability diagram (pitch chart #3).
 
 ### 4.6 Lock-on hysteresis (CSTMD1)
-`locked` becomes true when risk ≥ θ_lock (0.70, tuned on val) and becomes false only after risk < θ_release (0.40) for **2 consecutive scammer turns**. Report a **flicker rate** (warnings that disappear and reappear) with and without lock-on.
+`locked` becomes true when risk ≥ θ_lock (0.70, tuned on val) and becomes false only after risk < θ_release (0.40) for **2 consecutive scammer turns**. *Decision (A2):* "tuned on val" = the same VAL 1%-FPR threshold on calibrated risk that §6.2 uses, saved as `theta_lock` in `ml/artifacts/temperature.json` (0.70 is the fallback when the key is missing). A fired chloroplast also locks. Report a **flicker rate** (warnings that disappear and reappear) with and without lock-on.
 
 ### 4.7 Explanations
 - `attention`: α over turns. The UI highlights the turn that primed the lock.

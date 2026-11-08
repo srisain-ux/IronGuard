@@ -3,10 +3,12 @@
 import json
 
 import jsonschema
+import numpy as np
 from test_baselines import conv
 
 from ironguard_ml.data import ROOT
-from ironguard_ml.evaluate import evaluate
+from ironguard_ml.evaluate import evaluate, evaluate_preynet
+from ironguard_ml.features import TURN_DIM
 
 
 def test_val_only_threshold_and_summary_contract(monkeypatch):
@@ -52,3 +54,31 @@ def test_val_only_threshold_and_summary_contract(monkeypatch):
     assert smoke["display"] == "--"
     assert smoke["models"]["B0"]["ewr_at_k"] == [1] * 6
     jsonschema.validate(smoke, schema)
+
+
+def fake_vectors(turns):
+    # Scam turns mention "pay", so the fixture is learnable without the real encoder.
+    rows = [np.random.default_rng(len(t.text)).normal(size=TURN_DIM) * .1 for t in turns]
+    for row, t in zip(rows, turns):
+        row[0] += 3.0 if "pay" in t.text else -3.0
+    return np.stack(rows).astype(np.float32)
+
+
+def test_preynet_val_only_selection_and_summary_shape(monkeypatch):
+    monkeypatch.setattr("ironguard_ml.evaluate.SEEDS", (0, 1))
+    split = lambda n: tuple(conv(["hi"] * (i % 3 + 1)) for i in range(n)) + tuple(
+        conv(["hi", "pay now"], "job_task") for _ in range(n))
+    splits = {"train": split(8), "val": split(4), "test": split(4), "test_human": ()}
+    models, rel = evaluate_preynet(splits, fake_vectors)
+    assert set(models) == {"PreyNet", "PreyNet_no_attention", "PreyNet_no_multitask"}
+    keys = {"ewr_at_k", "lead_time", "lead_time_std", "strike_recall", "hard_neg_fpr",
+            "ece_before", "ece_after", "flicker_rate", "flicker_rate_no_lock", "test_human", "seeds"}
+    for entry in models.values():
+        assert keys <= set(entry)
+        assert len(entry["ewr_at_k"]) == 6 and len(entry["seeds"]) == 2
+        assert entry["test_human"]["lead_time"] is None  # empty human set stays null
+    assert rel["bins"] and len(rel["bins"]) == len(rel["acc"]) == len(rel["conf"])
+    json.dumps(models, allow_nan=False)
+    changed, _ = evaluate_preynet({**splits, "test": split(2)[:1]}, fake_vectors)
+    assert [s["threshold"] for s in changed["PreyNet"]["seeds"]] == \
+        [s["threshold"] for s in models["PreyNet"]["seeds"]]
