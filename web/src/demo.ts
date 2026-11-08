@@ -6,16 +6,10 @@ import bankScores from "./mocks/scores.bank.json";
 import benignScores from "./mocks/scores.benign.json";
 import bankCard from "./mocks/safety_card.bank.json";
 import example from "./mocks/score_response.turn3.json";
-export type Score = Omit<typeof example, "model"> & {
-  model: {
-    name: string;
-    version: string;
-    runtime?: string;
-    latency_ms?: number;
-  };
-};
+import type { ScoreResponse } from "./contracts/score_response";
+export type Score = ScoreResponse;
 type Conversation = {
-  turns: { sender: string; text: string; stage: string }[];
+  turns: { sender: "them" | "me"; text: string; stage: string }[];
   strike_turn: number | null;
 };
 export type Demo = {
@@ -34,8 +28,8 @@ export const demos: Demo[] = [
     initials: "AN",
     subtitle: "Unknown sender · SMS",
     scenario: "Relationship / crypto",
-    conversation: pig,
-    scores: pigScores,
+    conversation: pig as Conversation,
+    scores: pigScores as Score[],
   },
   {
     id: "bank",
@@ -43,8 +37,8 @@ export const demos: Demo[] = [
     initials: "PN",
     subtitle: "Unverified sender · SMS",
     scenario: "Bank impersonation",
-    conversation: bank,
-    scores: bankScores,
+    conversation: bank as Conversation,
+    scores: bankScores as Score[],
   },
   {
     id: "benign",
@@ -52,8 +46,8 @@ export const demos: Demo[] = [
     initials: "WN",
     subtitle: "Unknown sender · iMessage",
     scenario: "Benign hard negative",
-    conversation: benign,
-    scores: benignScores,
+    conversation: benign as Conversation,
+    scores: benignScores as Score[],
   },
 ];
 export function safetyCard(id: string, score: Score) {
