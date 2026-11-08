@@ -1,0 +1,19 @@
+{
+  "name": "odonataguard-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {"spectrum-ts": "12.15.0"},
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "tsx": "4.20.3",
+    "typescript": "5.9.3"
+  },
+  "engines": {"node": ">=20.12"},
+  "packageManager": "pnpm@12.16.1"
+}
