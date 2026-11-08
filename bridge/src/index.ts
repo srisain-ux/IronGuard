@@ -2,11 +2,11 @@ import { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
 import {
   bridgeServer,
-  echoHandler,
   type BridgeStatus,
   type WebhookTransport,
 } from "./server.js";
 import { betaTransport } from "./beta.js";
+import { photonFlow } from "./flow.js";
 
 const projectId = process.env.PHOTON_PROJECT_ID?.trim();
 const projectSecret = process.env.PHOTON_SECRET?.trim();
@@ -20,24 +20,26 @@ let status: BridgeStatus =
 let sdk: WebhookTransport | undefined;
 const api = projectId?.startsWith("pho_prj_") ? "photon-beta" : "spectrum";
 const counts = { received_events: 0, replies_accepted: 0, reply_failures: 0 };
-const echo = echoHandler(
-  () => {
+const flow = photonFlow({
+  apiUrl: process.env.IRONGUARD_API_URL,
+  mock: process.env.MOCK_API === "1",
+  sendFailed: () => {
     counts.reply_failures++;
     console.error(
       "Photon reply failed. Check API key permissions and the project's channel status.",
     );
   },
-  () => {
+  replyAccepted: () => {
     counts.replies_accepted++;
     console.info("Photon reply accepted for delivery.");
   },
-);
+});
 const server = bridgeServer({
   status: () => status,
   sdk: () => sdk,
   onMessage: async (space, message) => {
     counts.received_events++;
-    await echo(space, message);
+    await flow(space, message);
   },
   diagnostics: () => ({ api, ...counts }),
 });
@@ -50,7 +52,7 @@ server.on("error", () => {
 });
 server.listen(8787, "127.0.0.1", () => {
   console.info(
-    "IronGuard echo bridge: http://localhost:8787 · webhook /webhook · health /health",
+    "IronGuard forecast bridge: http://localhost:8787 · webhook /webhook · health /health",
   );
   if (status === "needs_credentials")
     console.info(
@@ -89,7 +91,7 @@ if (status === "connecting") {
       });
     status = "ready";
     console.info(
-      "Photon ready. Text the Photon number from your phone. Expected reply: IronGuard online 🛡",
+      "Photon ready. Forward suspicious text to the Photon number for a forecast.",
     );
   } catch {
     status = "connection_failed";

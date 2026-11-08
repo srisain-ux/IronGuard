@@ -1,12 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
+import { text } from "spectrum-ts";
 import { betaTransport } from "./beta.js";
 import {
-  echoHandler,
-  ONLINE,
-  type EchoMessage,
-  type EchoSpace,
+  type BridgeMessage,
+  type BridgeSpace,
 } from "./server.js";
 const rid = (kind: string, digit: string) =>
   `pho_${kind}_01${digit.repeat(24)}`;
@@ -168,16 +167,14 @@ test("Beta reply uses the received agent ID, source space, parent message and st
     signingSecret: secret,
     request,
   });
-  let queued: { space: EchoSpace; message: EchoMessage } | undefined;
+  let queued: { space: BridgeSpace; message: BridgeMessage } | undefined;
   const inbound = event();
   await transport.webhook(signed(JSON.stringify(inbound)), (space, message) => {
     queued = { space, message };
   });
   assert.equal(requests.length, 0);
   assert(queued);
-  const echo = echoHandler();
-  await echo(queued.space, queued.message);
-  await echo(queued.space, queued.message);
+  await queued.space.send(text("Forecast reply"));
   assert.equal(requests.length, 1);
   const sent = requests[0];
   assert.equal(
@@ -186,18 +183,16 @@ test("Beta reply uses the received agent ID, source space, parent message and st
   );
   assert.equal(
     (sent.init.headers as Record<string, string>)["Idempotency-Key"],
-    `ironguard-echo:${inbound.data.object.id}`,
+    `ironguard-forecast:${inbound.data.object.id}`,
   );
   assert.deepEqual(JSON.parse(String(sent.init.body)), {
     spaceId: inbound.data.object.space.id,
     senderId: inbound.data.object.receivedBy.id,
     parentMessageId: inbound.data.object.id,
-    content: { type: "text", format: "plain", text: ONLINE },
+    content: { type: "text", format: "plain", text: "Forecast reply" },
   });
 });
-test("Beta send errors reach the safe failure callback and permit retry", async () => {
-  let failures = 0;
-  const echo = echoHandler(() => failures++);
+test("Beta send errors reach the caller without leaking the response body", async () => {
   const request = (async () =>
     new Response("{}", { status: 403 })) as typeof fetch;
   const transport = betaTransport({
@@ -206,10 +201,10 @@ test("Beta send errors reach the safe failure callback and permit retry", async 
     signingSecret: secret,
     request,
   });
-  let job: Promise<void> | undefined;
+  let job: Promise<unknown> | undefined;
   await transport.webhook(signed(JSON.stringify(event())), (space, message) => {
-    job = echo(space, message);
+    job = space.send(text("Forecast reply"));
   });
-  await job;
-  assert.equal(failures, 1);
+  assert(job);
+  await assert.rejects(job, /Photon send failed \(403\)/);
 });
