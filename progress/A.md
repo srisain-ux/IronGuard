@@ -168,3 +168,5 @@
 
 ## Merge-window sync · 2026-11-08
 - [06:13 CST][P3] **Done:** rebased/synced `a/main` onto `origin/main` (49fd7b0) and pushed with the requested lease protection. Only the member worktree is open; no feature worktree branches required rebasing. `make sync` passed: dependency installation, 15 schemas/16 examples, 3 API smoke tests, and web/bridge type checks. `make check-ml` passed (141 passed, 1 skipped). | **Skipped:** fixes and a fix PR (no failures); B-only shared gate/phase update. | **Unverified:** live Nemotron, Photon, and browser runtime behavior; sync uses the stub API.
+
+- [06:14 CST][P3] **Done:** investigated jcubed's reported stash-apply conflicts; this A checkout is clean on `a/main`, with no unmerged paths, other worktrees, or stash entries. Re-ran `make sync` successfully (15 schemas, 16 examples, 3 API smoke tests, web/bridge type checks); `make check-ml` passed (141 passed, 1 skipped). | **Skipped:** conflict edits because the reported stash/conflicts are absent here; B-owned files remain for ss. | **Unverified:** jcubed's local conflict state and stashed edits; preserve their stash until owners inspect its diff.
