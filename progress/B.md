@@ -5,10 +5,11 @@
 
 ## Now
 - Phase: P0
-- Working on: API scaffold complete on `b/api-scaffold` (`.worktrees/b-api`).
+- Working on: API scaffold integrated into `b/main` and pushed to `origin/b/main`.
 - Blocked by: Real ML integration awaits member A; web/bridge typechecks await member C manifests.
 
 ## Log
+- [00:12][P0] Confirmed member B, cleaned main-checkout status by locally excluding agent worktrees, committed scaffold progress changes as requested, and merged the only unmerged local B feature branch (`b/api-scaffold`) using scripts/merge-window.sh. Rebase had no conflicts; validate/check-api (24 tests) and smoke (3 tests) pass; api/pyproject.toml and api/tests/test_smoke.py verified on origin/b/main. | Skipped: no other local b/* feature branches exist; no check fixes needed. | Unverified: fetched origin/main still lacks ml/pyproject.toml (double), web/package.json and bridge/package.json (jcubed); direct uv sync and cross-service typechecks await those packages.
 - [00:09][P0] Ran requested install/smoke chain from the main checkout. `cd api && uv sync` failed because b/main has no api/pyproject.toml; API scaffold is still on b/api-scaffold. | Skipped: web/bridge installs and make smoke did not execute because the command uses &&. | Unverified: integrated main-checkout smoke pending scaffold integration.
 - [00:09][P0] Ran user-requested `git switch b/main && git pull --rebase origin main && git push --force-with-lease` in the main checkout; pull was already current and push advanced origin/b/main to `9006627`. | Skipped: no code changes or tests needed for this Git-only operation. | Unverified: API scaffold remains on its separate `b/api-scaffold` branch.
 - [23:39][P0] Implemented Python 3.11/uv FastAPI package, editable `../ml` dependency, one-time model load, every API route, CORS allowlist, bounded in-memory SSE pub/sub plus bridge publish, consented re-scrubbed reef queue, artifact routes, and validated JSON manifest store. Added only additive contracts/examples and smoke/privacy/validator/scrubber/model-loading tests. | Skipped: real Nemotron Safeguard/Algae/tools and adapter training (explicit demo responses; zero-day background task emits a limitation event); no fabricated metrics or verification claims. | Unverified: real ML/ONNX integration until A lands; API lockfile cannot resolve until ML package exists.
@@ -23,5 +24,5 @@
 <!-- e.g. - [ ] @B contracts/score_response: add optional field `latency_ms` (number). Why: HUD shows it. -->
 
 ## Handoffs (things I've shipped that others can now use)
-- API routes and new envelope contracts/examples are ready on `b/api-scaffold`; run `make api-stub`. See `api/README.md` for request shapes and honest fixture limits.
+- API routes and new envelope contracts/examples are integrated into `b/main`; run `make api-stub`. See `api/README.md` for request shapes and honest fixture limits.
 <!-- e.g. - [x] ml/artifacts/preynet.onnx v2 (features output = 640-d) merged in M2 -->
