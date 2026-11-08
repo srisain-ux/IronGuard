@@ -1,0 +1,12 @@
+{
+  "objectClassName": "domain",
+  "ldhName": "PNC.COM",
+  "events": [
+    {"eventAction": "last changed", "eventDate": "2026-10-01T00:00:00Z"},
+    {"eventAction": "registration", "eventDate": "2020-01-01T00:00:00Z"}
+  ],
+  "entities": [
+    {"roles": ["registrant"], "vcardArray": ["vcard", [["fn", {}, "text", "Not the registrar"]]]},
+    {"roles": ["registrar"], "vcardArray": ["vcard", [["fn", {}, "text", "Fixture Registrar"]]]}
+  ]
+}

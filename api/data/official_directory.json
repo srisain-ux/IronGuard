@@ -1,0 +1,292 @@
+{
+  "label": "curated demo directory",
+  "notice": "Demo reference only; entries may change. A match does not authenticate a sender or caller ID. Confirm current contact details on the linked official site.",
+  "brands": [
+    {
+      "brand": "PNC",
+      "aliases": [
+        "PNC Bank"
+      ],
+      "domains": [
+        "pnc.com"
+      ],
+      "phones": [
+        "+18887622265"
+      ],
+      "contact_url": "https://www.pnc.com/en/customer-service.html"
+    },
+    {
+      "brand": "Chase",
+      "aliases": [
+        "JPMorgan Chase"
+      ],
+      "domains": [
+        "chase.com"
+      ],
+      "phones": [
+        "+18009359935"
+      ],
+      "contact_url": "https://www.chase.com/digital/customer-service"
+    },
+    {
+      "brand": "Wells Fargo",
+      "aliases": [],
+      "domains": [
+        "wellsfargo.com"
+      ],
+      "phones": [
+        "+18008693557"
+      ],
+      "contact_url": "https://www.wellsfargo.com/help/"
+    },
+    {
+      "brand": "Bank of America",
+      "aliases": [
+        "BofA"
+      ],
+      "domains": [
+        "bankofamerica.com"
+      ],
+      "phones": [
+        "+18004321000"
+      ],
+      "contact_url": "https://www.bankofamerica.com/customer-service/contact-us/"
+    },
+    {
+      "brand": "Citi",
+      "aliases": [
+        "Citibank"
+      ],
+      "domains": [
+        "citi.com"
+      ],
+      "phones": [
+        "+18003749700"
+      ],
+      "contact_url": "https://www.citi.com/customer-service/contact-us"
+    },
+    {
+      "brand": "Capital One",
+      "aliases": [],
+      "domains": [
+        "capitalone.com"
+      ],
+      "phones": [
+        "+18773834802"
+      ],
+      "contact_url": "https://www.capitalone.com/help-center/contact-us/"
+    },
+    {
+      "brand": "Discover",
+      "aliases": [],
+      "domains": [
+        "discover.com"
+      ],
+      "phones": [
+        "+18003472683"
+      ],
+      "contact_url": "https://www.discover.com/customer-service/"
+    },
+    {
+      "brand": "American Express",
+      "aliases": [
+        "Amex"
+      ],
+      "domains": [
+        "americanexpress.com"
+      ],
+      "phones": [
+        "+18005284800"
+      ],
+      "contact_url": "https://www.americanexpress.com/us/customer-service/"
+    },
+    {
+      "brand": "PayPal",
+      "aliases": [],
+      "domains": [
+        "paypal.com"
+      ],
+      "phones": [],
+      "contact_url": "https://www.paypal.com/us/cshelp/contact-us"
+    },
+    {
+      "brand": "Zelle",
+      "aliases": [],
+      "domains": [
+        "zellepay.com"
+      ],
+      "phones": [],
+      "contact_url": "https://www.zellepay.com/contact-us"
+    },
+    {
+      "brand": "Venmo",
+      "aliases": [],
+      "domains": [
+        "venmo.com"
+      ],
+      "phones": [],
+      "contact_url": "https://help.venmo.com/"
+    },
+    {
+      "brand": "Cash App",
+      "aliases": [],
+      "domains": [
+        "cash.app"
+      ],
+      "phones": [
+        "+18009691940"
+      ],
+      "contact_url": "https://cash.app/help"
+    },
+    {
+      "brand": "T-Mobile",
+      "aliases": [
+        "T Mobile"
+      ],
+      "domains": [
+        "t-mobile.com"
+      ],
+      "phones": [
+        "+18009378997"
+      ],
+      "contact_url": "https://www.t-mobile.com/contact-us"
+    },
+    {
+      "brand": "Verizon",
+      "aliases": [],
+      "domains": [
+        "verizon.com"
+      ],
+      "phones": [
+        "+18009220204"
+      ],
+      "contact_url": "https://www.verizon.com/support/contact-us/"
+    },
+    {
+      "brand": "AT&T",
+      "aliases": [
+        "ATT"
+      ],
+      "domains": [
+        "att.com"
+      ],
+      "phones": [
+        "+18002882020"
+      ],
+      "contact_url": "https://www.att.com/support/contact-us/"
+    },
+    {
+      "brand": "Apple",
+      "aliases": [],
+      "domains": [
+        "apple.com"
+      ],
+      "phones": [
+        "+18002752273"
+      ],
+      "contact_url": "https://support.apple.com/contact"
+    },
+    {
+      "brand": "Microsoft",
+      "aliases": [],
+      "domains": [
+        "microsoft.com"
+      ],
+      "phones": [],
+      "contact_url": "https://support.microsoft.com/contactus"
+    },
+    {
+      "brand": "Amazon",
+      "aliases": [],
+      "domains": [
+        "amazon.com"
+      ],
+      "phones": [],
+      "contact_url": "https://www.amazon.com/hz/contact-us"
+    },
+    {
+      "brand": "Google",
+      "aliases": [],
+      "domains": [
+        "google.com"
+      ],
+      "phones": [],
+      "contact_url": "https://support.google.com/"
+    },
+    {
+      "brand": "Netflix",
+      "aliases": [],
+      "domains": [
+        "netflix.com"
+      ],
+      "phones": [],
+      "contact_url": "https://help.netflix.com/contactus"
+    },
+    {
+      "brand": "USPS",
+      "aliases": [
+        "United States Postal Service"
+      ],
+      "domains": [
+        "usps.com"
+      ],
+      "phones": [
+        "+18002758777"
+      ],
+      "contact_url": "https://www.usps.com/help/contact-us.htm"
+    },
+    {
+      "brand": "UPS",
+      "aliases": [
+        "United Parcel Service"
+      ],
+      "domains": [
+        "ups.com"
+      ],
+      "phones": [
+        "+18007425877"
+      ],
+      "contact_url": "https://www.ups.com/us/en/support/contact-us"
+    },
+    {
+      "brand": "FedEx",
+      "aliases": [
+        "Federal Express"
+      ],
+      "domains": [
+        "fedex.com"
+      ],
+      "phones": [
+        "+18004633339"
+      ],
+      "contact_url": "https://www.fedex.com/en-us/customer-support.html"
+    },
+    {
+      "brand": "IRS",
+      "aliases": [
+        "Internal Revenue Service"
+      ],
+      "domains": [
+        "irs.gov"
+      ],
+      "phones": [
+        "+18008291040"
+      ],
+      "contact_url": "https://www.irs.gov/help/let-us-help-you"
+    },
+    {
+      "brand": "UTD",
+      "aliases": [
+        "UT Dallas",
+        "University of Texas at Dallas"
+      ],
+      "domains": [
+        "utdallas.edu"
+      ],
+      "phones": [
+        "+19728832111"
+      ],
+      "contact_url": "https://www.utdallas.edu/contact/"
+    }
+  ]
+}

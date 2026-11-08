@@ -23,7 +23,7 @@ done
 
 git fetch origin
 echo "→ rebasing $branch onto origin/main"
-git rebase origin/main
+git rebase --rebase-merges origin/main
 
 echo "→ checks"
 make validate
@@ -33,5 +33,5 @@ case "$member" in
   C) make check-web check-bridge ;;
 esac
 
-git push --force-with-lease origin "$branch"
+git push origin "$branch"
 echo "✅ $branch is rebased, checked and pushed. Open/refresh your PR:  gh pr create --base main --head $branch --fill  (or update the existing PR)"

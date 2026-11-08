@@ -34,4 +34,33 @@ used automatically. `preynet` mode never falls back to fixtures.
 `CORS_ORIGINS` is a comma-separated allowlist, defaulting to
 `http://localhost:5173`. SSE is process-local: run one worker for this demo.
 Forwarded text stays in memory; neither inference requests nor bodies are logged
-or written to disk. This scaffold does not call NVIDIA or any external service.
+or written to disk. Routes do not call NVIDIA or external verification by default.
+
+Safeguard tools are plain typed functions in `ironguard_api/agent/tools.py`:
+
+- `lookup_official_contact(brand)` returns a contact or `None`, plus the label
+  **curated demo directory** and its limitation notice. The 25-brand reference
+  lives in `data/official_directory.json`; unknown brands are never guessed.
+  Display directory matches as "verified against our curated directory".
+- `check_domain(domain)` normalizes a DNS hostname (including IDNA), queries
+  `https://rdap.org/domain/<domain>` and follows registry referrals with a
+  5-second HTTP timeout. Results include registration age in days, registrar,
+  official-domain/subdomain matches and full-hostname Levenshtein edit distance
+  to the closest official domain. Distances 1–2 flag possible lookalikes.
+  `rdap_status` distinguishes `ok`, `not_found` and `unavailable`; missing or
+  unusable age/registrar data stays `None`. These checks do not prove safety.
+  The optional timezone-aware `now` argument makes date calculations repeatable.
+- `check_number(phone)` returns E.164 format or `None`, directory matches,
+  North American fictional `555-0100`–`555-0199` and toll-free flags. Bare
+  10-digit numbers assume US/Canada; international numbers require `+`.
+  Extensions and vanity numbers are rejected. Format does not verify assignment,
+  and caller ID can be spoofed even when it matches an official phone number.
+- `scrub_and_report(text)` builds a local `ReefReport` dict. Call only after
+  explicit reporting consent; it does not obtain consent, submit, queue or log.
+  Channel is `other`, family is `unknown` and stages are empty until the caller
+  supplies real metadata. Text is scrubbed before truncation to 1,500 characters.
+  Brand names/aliases come from the directory; names use a small demo list.
+  This is pattern masking, not general PII recognition.
+
+Tools are not yet wired into the Safeguard loop. Their tests use a saved RDAP
+fixture and mocked httpx; they make no external network requests.
