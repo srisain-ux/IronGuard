@@ -2,6 +2,7 @@
 
 import math
 from collections.abc import Sequence
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -80,3 +81,11 @@ class PreyNet(nn.Module):
             "attention": alpha,
             "features": features,
         }
+
+
+def load_net(artifacts: Path) -> PreyNet:
+    """artifacts/preynet.pt → PreyNet in eval mode."""
+    checkpoint = torch.load(Path(artifacts) / "preynet.pt", map_location="cpu", weights_only=True)
+    net = PreyNet(**checkpoint["config"])
+    net.load_state_dict(checkpoint["state_dict"])
+    return net.eval()

@@ -107,7 +107,7 @@
 - **Unverified:** browser (onnxruntime-web) execution and the MiniLM embedding parity between Python and transformers.js (§4.1) are still not checked.
 
 ## Handoffs (A3): for jcubed (browser ONNX)
-- **File:** `ml/artifacts/preynet.onnx` (opset 17, 774 KB, fp32). Same weights as `preynet.pt` (version `0.1.0-v1-s2`).
+- **File:** `ml/artifacts/preynet.onnx` (opset 17, 774 KB, fp32). Same weights as `preynet.pt` (version **`0.1.0-v1-s1`**, retrained on full v1 at 05:40; the first express drop carried the older `-s2` model, so re-pull after the second drop).
 - **Input:** `turn_vecs`, float32 `[batch, turns, 385]`, both axes dynamic. Use batch 1, every row a real turn (no padding), **left-truncate to the last 12 turns**. Per turn: `[MiniLM(role_text) (384, mean-pooled, L2-normalized), is_them (1.0 for "them", 0.0 for "me")]`, where `role_text = "[THEM] " + text` or `"[ME] " + text` (exact prefix, one space). Encoder: `Xenova/all-MiniLM-L6-v2`, `pooling: "mean", normalize: true`.
 - **Outputs** (all for the LAST turn of the input):
   - `family_logits` `[batch, 7]`, order `benign, pig_butchering, bank_impersonation, family_emergency, job_task, toll_delivery, carrier_support`
@@ -117,10 +117,49 @@
   - `features` `[batch, 640]`: the chloroplast input
 - **Calibration** (`ml/artifacts/temperature.json`): `{"family": T_f, "next_stage": T_s, "tts": T_t, "theta_lock": θ}`. Probabilities = `softmax(logits / T)` per head. `risk = 1 − P_family(benign)`.
 - **Per message:** run the model once on turns `[0..k]` after each new turn k (keep the per-turn risks; the lock needs history).
-- **Lock-on (§4.6):** lock when `risk ≥ theta_lock` (**use the file value, currently 0.986, not 0.70**). Once locked, release only after **2 consecutive "them" turns** with `risk < 0.40`. "me" turns never change the counter. A fired chloroplast also locks.
+- **Lock-on (§4.6):** lock when `risk ≥ theta_lock` (**use the file value, currently 0.966, not 0.70**). Once locked, release only after **2 consecutive "them" turns** with `risk < 0.40`. "me" turns never change the counter. A fired chloroplast also locks.
 - **Confidence band (§4.5):** `high` if risk ≥ 0.80 or ≤ 0.10; else `uncertain` if top family p < 0.5 or 0.35 ≤ risk < 0.80; else `low`.
 - **Chloroplast (§5.2):** `p = sigmoid(W2·gelu(W1·f + b1) + b2)` with `f = features`, exact erf GELU. W1 `[hidden_dim × 640]` and W2 `[1 × hidden_dim]` are row-major, base64 float32 little-endian. Fired if `p ≥ manifest.threshold`; then risk = max(risk, p) and the family label comes from the chloroplast if `p` beats the base risk. Vitality is display-only.
 - Reference: `ml/ironguard_ml/infer.py` (`Model.score`, `lock_states`, `confidence_band`) matches this; the parity test is `ml/tests/test_onnx_parity.py`.
+
+- [05:57][P3] **Done (part 2):**
+  - **Retrain.** The shipped `preynet.pt` came from the partial v1 (1,009 conversations, 10:35 UTC). B's full v1 (1,773 after dedupe) merged later, so `make eval` reported `shipped_matches_eval: false`. Ran `make train`, then `make export` and `make eval`: it ships seed 1, version `0.1.0-v1-s1`, `theta_lock` 0.966, and `shipped_matches_eval: true`.
+  - **`ml/ironguard_ml/chloroplast.py`** (`train()` and `python -m ironguard_ml.chloroplast` benchmark):
+    - frozen PreyNet features → 640→32→GELU→1, weighted BCE, 300 full-batch AdamW steps (lr 3e-3)
+    - threshold = the larger of the 1%-FPR thresholds on a held-out 20% of (a) the caller's hard negatives and (b) the base negative bank, both by conversation, stepped in float32. It raises instead of publishing an adapter that can't reach 1%.
+    - weights base64 float32 LE (w1|b1|w2|b2); 82,180 bytes, sha256, `train_seconds`, `val_auc`, `val_recall_at_1fpr`
+    - **Timing:** the benchmark (120 pos / 120 neg, real MiniLM, memory only) gives **1.17–1.32 s total** (about 1.1 s features, 0.15 s fit) against the 10 s budget.
+  - **`ml/artifacts/negative_bank.npz`** (3.9 MB, built by `make export`): whole TRAIN conversations, about 1,000 benign plus about 500 other-family prefixes, pinned to the sha256 of `preynet.pt`.
+  - **`infer.apply_chloroplast()`:** the §5.2 reference, renamed from `chloroplast_probs` (no external callers).
+  - **`ml/ironguard_ml/zero_day.py`:** LOFO and the sample-efficiency curve, written into `eval_summary.json → zero_day`.
+  - **Tests:** `test_chloroplast.py` (schema, packing, threshold, determinism, input errors, stale bank, bank exclusion) and `test_zero_day.py` (proxy halves are disjoint, Algae near-copy filter, a wiring test showing that changing the test conversations can't change θ or the chloroplast threshold, seed-fixture skip). 141 passed, 1 skipped.
+- **LOFO numbers (make eval, v1, source `v1_proxy` → `available: false`, NOT pitch evidence; means over seeds 0/1/2, 3 dp):**
+  - job_task EWR@3: base (without job_task) **0.107 ± 0.013**, with chloroplast **0.867 ± 0.035**. Lead time 0.551 → 3.858 turns.
+  - Sample efficiency EWR@3: N=25 0.804, N=50 0.871, N=100 and 200 `null` (the proxy only has 74 positives).
+  - Chloroplast `train_seconds` 0.214 (cached embeddings).
+  - **Regression on TEST without job_task (honest):** benign FPR 0.015 → **0.020**, hard-negative FPR 0.028 → **0.040**, base-family EWR@3 0.679 → 0.679. The chloroplast adds false alarms; the 1% cap is on synthetic held-out negatives, not TEST. Before the per-source threshold fix this was 0.033 / 0.068.
+  - `time_to_protection_s` is null (no generation time for the proxy).
+- **New PreyNet headline (full v1, TEST 266 conversations):** EWR@1..6 = 0.471, 0.591, 0.667, 0.719, 0.739, 0.739; lead time **2.799 ± 0.324**; TEST fpr 0.018; hard-negative FPR 0.034; ECE 0.072 → 0.025; flicker 0.000 with lock-on vs 0.067 without. B3 lead 2.113, B2 1.639. Ablations: no_attention 2.779, no_multitask 2.649. Full PreyNet now leads, but by less than one std, so still don't claim attention helps.
+- **Reviews:**
+  - leakage-hunter: **no train/test leakage**. Fixed all CONFIRMED items: per-source threshold, whole-conversation bank, no double group ids, the seed-fallback crash, seed stds, and the regression disclosure in `notes`. Also added the PLAUSIBLE Algae near-copy filter and refuse-at-saturation.
+  - /code-review: fixed 8 of 10. Skipped: stub leniency (documented below) and the `infer.load`/`load_net` dedupe (`infer` needs checkpoint meta).
+  - /ponytail-review: merged the two JSONL readers into `data.read_records`, added the seed-fallback test, used `loss.item()`.
+  - contract-guardian: PASS on all 5 items.
+- **Skipped:** real Algae zero-day data (B's; see Requests); `time_to_protection_s`; browser ONNX run; MiniLM Python↔browser embedding parity (§4.1); LoRA stretch (§5.3).
+- **Unverified:** cross-generator (`test_human` is empty); `make eval` is not bit-reproducible in the 7th digit (a CPU float order effect seen by the leakage-hunter).
+
+## Handoffs (A3): for ss (B3 `/v1/zero-day`)
+- `from ironguard_ml.chloroplast import train, load_base` → `train(pos, neg, family_id, label, alert, progress_cb)` returns a schema-valid manifest.
+  - `pos` and `neg` are lists of **conversation-schema dicts** (each side needs **at least 5**). Non-dicts raise `TypeError`; schema or semantic errors raise `DataError` (a `ValueError`); bad `family_id`, `label` or `alert` raise `ValueError`. The stub is more lenient.
+  - `progress_cb(step, 300, loss)` fires every 10 steps.
+  - A `ValueError` "cannot reach 1% FPR" means the data can't separate. Fail the job; don't publish.
+- **Use the same artifacts as the scorer:** `train(..., base=load_base(Path(app.state.artifacts)))`. Otherwise it trains on `ml/artifacts` even when `IRONGUARD_ARTIFACTS` points elsewhere.
+- **Needs** `ml/artifacts/negative_bank.npz` (it ships with the next drop). `load_base` is cached per process, so restart the API after a new `make export`.
+- **Privacy:** it embeds in memory only and logs only the family id and timings.
+
+## Requests (A3)
+- [ ] @B Algae zero-day run for the LOFO: alert *"Texts offer an easy remote job, then ask you to pay a deposit to unlock higher-paying tasks."* → `data/generated/zd_job_task/*.jsonl` with 200 positives (`family: "zd_job_task"`) and 200 hard negatives (`family: "benign"`, `hard_negative: true`), plus `data/generated/zd_job_task/meta.json` `{"alert": ..., "generate_seconds": <wall clock>}`. Do not show the generator any v1 job_task text. Why: the zero_day block becomes `available: true` with N=100/200 and `time_to_protection_s`.
+- [ ] @B `contracts/schemas/chloroplast.schema.json` (additive, optional): `base_sha256` (sha256 of the `preynet.pt` the adapter was trained on). Why: after a retrain, old adapters read different features and silently mis-fire. With this field, `infer` and the browser can skip mismatched ones.
 
 ## Integration testing guidance · 2026-11-08
 - **Done:** inspected run targets, service READMEs, zero-day route, and browser mode handling to explain full-service testing. Confirmed this checkout still has a demo zero-day job and scripted phone inference; opening `/reef` alone cannot prove Step 3.
