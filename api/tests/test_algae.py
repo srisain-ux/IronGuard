@@ -16,6 +16,7 @@ TEXTS = ["hi it is your bank", "who", "we saw a login", "ok", "send the code to 
 def test_check_accepts_good_and_rejects_bad():
     assert algae.check(conv(TEXTS), "bank_impersonation") is None
     assert algae.check(conv(["Fraud alert"] + TEXTS[1:]), "bank_impersonation") == "leak-word"
+    assert algae.check(conv(["that is a red flag"] + TEXTS[1:]), "bank_impersonation") == "leak-word"
     assert algae.check(conv(TEXTS[:4] + ["call 214-555-0987", "no"]), "bank_impersonation") == "real-looking-contact"
     assert algae.check(conv(TEXTS[:4] + ["go to evil.com", "no"]), "bank_impersonation") == "real-looking-contact"
     assert algae.check(conv(TEXTS[:4] + ["go to pay.example.com", "no"]), "bank_impersonation") is None

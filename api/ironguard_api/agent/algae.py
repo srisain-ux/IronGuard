@@ -54,7 +54,8 @@ HARD_NEGATIVES = [
     "a real carrier notice about a plan change or bill reminder that points to the official app",
     "a relative who really texted from a new phone and proves it with personal details, never asks for money",
 ]
-LEAK = re.compile(r"\b(scam\w*|fraud\w*|phish\w*|bait\w*|pig[\s-]?butcher\w*)", re.IGNORECASE)
+LEAK = re.compile(r"\b(scam\w*|fraud\w*|phish\w*|bait\w*|pig[\s-]?butcher\w*|red flags?|hook|pivot|strike|stage|label\w*)\b",
+                  re.IGNORECASE)  # spec 3.3(4): label words must not appear in text
 PHONE = re.compile(r"(\d{3})[\s.)-]+(\d{4})\b")
 DOMAIN = re.compile(r"\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|net|org|io|co|us|info|biz|app|xyz|me|ly|gov|edu|top|cc|ru|cn)\b", re.IGNORECASE)
 
