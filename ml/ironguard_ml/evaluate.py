@@ -17,7 +17,7 @@ import torch
 
 from ironguard_ml.baselines import Baseline
 from ironguard_ml.calibrate import ece, reliability, top_label
-from ironguard_ml.data import DATA_DIR, FAMILIES, ROOT
+from ironguard_ml.data import DATA_DIR, ROOT
 from ironguard_ml.features import turn_vectors
 from ironguard_ml.infer import lock_states
 from ironguard_ml.metrics import (
@@ -28,6 +28,7 @@ from ironguard_ml.metrics import (
     threshold_at_fpr,
 )
 from ironguard_ml.train import (
+    BENIGN,
     SEEDS,
     VARIANTS,
     FitResult,
@@ -45,7 +46,6 @@ from ironguard_ml.train import (
 )
 
 NATIVE_THRESHOLD = 0.5  # B0 emits 0/1 rule hits
-BENIGN = FAMILIES.index("benign")
 AVERAGED = ("lead_time", "strike_recall", "hard_neg_fpr", "fpr", "ece_before", "ece_after",
             "ece_risk_before", "ece_risk_after", "flicker_rate", "flicker_rate_no_lock")
 
@@ -96,7 +96,8 @@ def _aggregate(fits: list[FitResult], runs: list[dict]) -> dict:
     return {
         "ewr_at_k": [_mean([r["ewr_at_k"][i] for r in runs]) for i in range(6)],
         **{key: _mean([r[key] for r in runs]) for key in AVERAGED},
-        "lead_time_std": None if None in lead else float(np.std(lead, ddof=1)),
+        "lead_time_std": None if None in lead or len(lead) < 2 else float(np.std(lead, ddof=1)),
+        "abstains": any(r["threshold"] > 1 for r in runs),
         "test_human": {
             "ewr_at_k": [_mean([r["test_human"]["ewr_at_k"][i] for r in runs]) for i in range(6)],
             **{key: _mean([r["test_human"][key] for r in runs])
@@ -113,14 +114,27 @@ def evaluate_preynet(splits: dict, vectors=turn_vectors) -> tuple[dict, dict]:
     data = {name: encode(splits[name], vectors) for name in ("train", "val", "test")}
     if splits["test_human"]:
         data["test_human"] = encode(splits["test_human"], vectors)
-    models, shipped_reliability = {}, None
+    models, shipped = {}, None
     for name, variant in VARIANTS.items():
         fits = [fit(data["train"], data["val"], seed, variant) for seed in SEEDS]
         runs = [_run(f, data) for f in fits]
         models[name] = _aggregate(fits, runs)
         if name == "PreyNet":  # same selection rule as `make train`
-            shipped_reliability = runs[fits.index(best_of(fits))]["reliability"]
-    return models, shipped_reliability
+            best = fits.index(best_of(fits))
+            shipped = {"seed": fits[best].seed, "epoch": fits[best].epoch,
+                       "theta_lock": runs[best]["threshold"], **runs[best]["reliability"]}
+    return models, shipped
+
+
+def _matches_artifacts(shipped: dict, artifacts: Path = ROOT / "ml/artifacts") -> bool | None:
+    """Whether artifacts/preynet.pt + temperature.json are the seed this eval re-trained."""
+    try:
+        meta = torch.load(artifacts / "preynet.pt", map_location="cpu", weights_only=True)["meta"]
+        theta = json.loads((artifacts / "temperature.json").read_text()).get("theta_lock")
+    except FileNotFoundError:
+        return None
+    return (meta["seed"] == shipped["seed"] and meta["epoch"] == shipped["epoch"]
+            and theta is not None and math.isclose(theta, shipped["theta_lock"], rel_tol=1e-6))
 
 
 def evaluate(splits: dict, dataset: dict, with_preynet: bool = False,
@@ -144,8 +158,10 @@ def evaluate(splits: dict, dataset: dict, with_preynet: bool = False,
                                           **summarize(test, NATIVE_THRESHOLD)}
     reliability_bins = {"bins": [], "acc": [], "conf": []}
     if with_preynet:
-        preynet_models, reliability_bins = evaluate_preynet(splits, vectors)
+        preynet_models, shipped = evaluate_preynet(splits, vectors)
         models.update(preynet_models)
+        models["PreyNet"]["shipped_matches_eval"] = _matches_artifacts(shipped)
+        reliability_bins = {k: shipped[k] for k in ("bins", "acc", "conf", "count")}
     availability = ({"available": False, "display": "--"}
                     if dataset.get("version") == "seed-smoke" else {"available": True})
     return {
@@ -199,6 +215,8 @@ def main():
                    "prefix (the number the UI shows)."),
                   ("theta_lock = each seed's VAL 1%-FPR threshold (§4.6 tuned on VAL), so "
                    "flicker is measured at the reported operating point."),
+                  ("shipped_matches_eval: artifacts/preynet.pt and theta_lock equal the "
+                   "re-trained best-VAL seed reported here (null if artifacts are missing)."),
                   ("Shipped PreyNet trains on all six scam families including job_task; the "
                    "zero-day LOFO experiment needs a separate base model (exclude_held_out)."),
                   ("ECE and reliability use the family head's top-label confidence on TEST "

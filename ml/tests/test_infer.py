@@ -64,6 +64,30 @@ def test_zero_chloroplast_reported_but_never_fires(model):
     assert result["family"]["source"] == "base"
 
 
+def test_broken_chloroplast_is_skipped_not_fatal(model):
+    good = chloroplast_train([], [], "zd_test", "Test", "alert")
+    broken = {**good, "id": "cp_broken", "hidden_dim": 5}
+    no_id = {k: v for k, v in good.items() if k != "id"}
+    result = model.score([{"sender": "them", "text": "hi"}],
+                         chloroplasts=[broken, "not a manifest", no_id, good])
+    validate(result, "score_response")
+    assert [h["id"] for h in result["chloroplast_hits"]] == [good["id"]]
+
+
+def test_fired_chloroplast_wins_and_locks(model):
+    manifest = chloroplast_train([], [], "zd_test", "Test", "alert")
+    b2 = base64.b64encode(np.array([3.0], "<f4").tobytes()).decode()  # p = sigmoid(3) ~ .95
+    fired = {**manifest, "threshold": 0.6, "weights": {**manifest["weights"], "b2": b2}}
+    model.theta_lock = 0.99  # VAL-tuned lock above the adapter's p must still lock
+    try:
+        result = model.score([{"sender": "them", "text": "hi"}], chloroplasts=[fired])
+    finally:
+        model.theta_lock = 0.70
+    validate(result, "score_response")
+    assert result["chloroplast_hits"][0]["fired"] is True
+    assert result["family"]["source"] == "chloroplast" and result["locked"] is True
+
+
 def test_chloroplast_math_matches_formula():
     rng = np.random.default_rng(0)
     w1, b1 = rng.normal(size=(4, FEATURE_DIM)).astype("<f4"), rng.normal(size=4).astype("<f4")
