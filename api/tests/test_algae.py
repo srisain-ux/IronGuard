@@ -1,6 +1,8 @@
 import asyncio
 import json
 
+import pytest
+
 from ironguard_api.agent import algae
 from ironguard_api.contracts import validator
 
@@ -16,6 +18,7 @@ TEXTS = ["hi it is your bank", "who", "we saw a login", "ok", "send the code to 
 def test_check_accepts_good_and_rejects_bad():
     assert algae.check(conv(TEXTS), "bank_impersonation") is None
     assert algae.check(conv(["Fraud alert"] + TEXTS[1:]), "bank_impersonation") == "leak-word"
+    assert algae.check(conv(["that is a red flag"] + TEXTS[1:]), "bank_impersonation") == "leak-word"
     assert algae.check(conv(TEXTS[:4] + ["call 214-555-0987", "no"]), "bank_impersonation") == "real-looking-contact"
     assert algae.check(conv(TEXTS[:4] + ["go to evil.com", "no"]), "bank_impersonation") == "real-looking-contact"
     assert algae.check(conv(TEXTS[:4] + ["go to pay.example.com", "no"]), "bank_impersonation") is None
@@ -59,3 +62,27 @@ def test_batch_writes_valid_line_then_resumes(monkeypatch, tmp_path):
     assert f.drops["stage"] == 1
     again = algae.Factory("t", 1, 2, 5, tmp_path)  # resume: quota already met, fingerprint loaded
     assert again.remaining(("bank_impersonation", False)) == 0 and len(again.seen["bank_impersonation"]) == 1
+
+
+def test_resume_cuts_half_written_tail(monkeypatch, tmp_path):
+    for k in ("NEMOTRON_GEN_MODEL", "NEMOTRON_AGENT_MODEL"):
+        monkeypatch.setenv(k, "nemotron")
+    good = json.dumps({"family": "benign", "hard_negative": False, "turns": conv(TEXTS)["turns"]})
+    path = tmp_path / "t" / "benign.jsonl"
+    path.parent.mkdir()
+    path.write_text(good + "\n" + good[:40])  # killed mid-write
+    f = algae.Factory("t", 1, 2, 5, tmp_path)
+    assert f.kept[("benign", False)] == 1 and path.read_text() == good + "\n"
+
+
+def test_resume_refuses_damage_in_the_middle(monkeypatch, tmp_path):
+    for k in ("NEMOTRON_GEN_MODEL", "NEMOTRON_AGENT_MODEL"):
+        monkeypatch.setenv(k, "nemotron")
+    good = json.dumps({"family": "benign", "hard_negative": False, "turns": conv(TEXTS)["turns"]})
+    path = tmp_path / "t" / "benign.jsonl"
+    path.parent.mkdir()
+    text = "<<<<<<< HEAD\n" + good + "\n"
+    path.write_text(text)
+    with pytest.raises(RuntimeError):
+        algae.Factory("t", 1, 2, 5, tmp_path)
+    assert path.read_text() == text  # nothing deleted

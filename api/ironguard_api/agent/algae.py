@@ -54,7 +54,8 @@ HARD_NEGATIVES = [
     "a real carrier notice about a plan change or bill reminder that points to the official app",
     "a relative who really texted from a new phone and proves it with personal details, never asks for money",
 ]
-LEAK = re.compile(r"\b(scam\w*|fraud\w*|phish\w*|bait\w*|pig[\s-]?butcher\w*)", re.IGNORECASE)
+LEAK = re.compile(r"\b(scam\w*|fraud\w*|phish\w*|bait\w*|pig[\s-]?butcher\w*|red flags?|hook|pivot|strike|stage|label\w*)\b",
+                  re.IGNORECASE)  # spec 3.3(4): label words must not appear in text
 PHONE = re.compile(r"(\d{3})[\s.)-]+(\d{4})\b")
 DOMAIN = re.compile(r"\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|net|org|io|co|us|info|biz|app|xyz|me|ly|gov|edu|top|cc|ru|cn)\b", re.IGNORECASE)
 
@@ -174,8 +175,15 @@ class Factory:
         self.out.mkdir(parents=True, exist_ok=True)
         for f in self.seen:  # resume: count and fingerprint what is already on disk
             path = self.out / f"{f}.jsonl"
-            for line in path.read_text().splitlines() if path.exists() else []:
-                rec = json.loads(line)
+            lines = path.read_text().splitlines() if path.exists() else []
+            for n, line in enumerate(lines):
+                try:
+                    rec = json.loads(line)
+                except ValueError:  # a killed run leaves a half-written LAST line: cut it so appends stay valid
+                    if n != len(lines) - 1:  # anywhere else it is damage; never delete the good lines after it
+                        raise RuntimeError(f"{path}:{n + 1} is not valid JSON; fix the file by hand") from None
+                    path.write_text("".join(f"{x}\n" for x in lines[:n]))
+                    break
                 self.kept[(f, rec.get("hard_negative", False))] += 1
                 self.seen[f].append(shingles(rec))
 
@@ -211,7 +219,7 @@ class Factory:
                     for i, c in enumerate(good)])
                 graded = await self.call([{"role": "user", "content": CRITIC.format(convs=listing)}],
                                          model=self.critic_model, temperature=0.2, max_tokens=1500, thinking=False)
-                scores = {s["i"]: s for s in graded.get("scores", []) if isinstance(s, dict) and "i" in s}
+                scores = {int(s["i"]): s for s in graded.get("scores", []) if isinstance(s, dict) and str(s.get("i")).isdigit()}
         except Exception as exc:  # noqa: BLE001  one bad batch must not stop the run; count it
             self.drops[f"error:{type(exc).__name__}"] += 1
             return
