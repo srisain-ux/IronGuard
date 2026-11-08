@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "zero_day_request.schema.json",
+  "type": "object",
+  "properties": {
+    "alert": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 400,
+      "pattern": "\\S"
+    }
+  },
+  "required": [
+    "alert"
+  ],
+  "additionalProperties": false
+}

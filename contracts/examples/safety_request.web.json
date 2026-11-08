@@ -1,0 +1,60 @@
+{
+  "score": {
+    "risk": 0.74,
+    "confidence_band": "uncertain",
+    "family": {
+      "id": "pig_butchering",
+      "label": "Relationship / crypto (pig butchering)",
+      "p": 0.68,
+      "source": "base"
+    },
+    "family_probs": {
+      "benign": 0.26,
+      "pig_butchering": 0.68,
+      "bank_impersonation": 0.01,
+      "family_emergency": 0.02,
+      "job_task": 0.01,
+      "toll_delivery": 0.01,
+      "carrier_support": 0.01
+    },
+    "next_stage": {
+      "stage": "hook",
+      "p": 0.61
+    },
+    "turns_to_strike": {
+      "bucket": "2",
+      "p": 0.47
+    },
+    "locked": true,
+    "attention": [
+      0.18,
+      0.07,
+      0.75
+    ],
+    "evidence": [
+      {
+        "turn_idx": 2,
+        "reason": "Identity switch after a 'wrong number' opener"
+      },
+      {
+        "turn_idx": 2,
+        "reason": "Rapport-building after the sender admits a mistake"
+      }
+    ],
+    "chloroplast_hits": [],
+    "model": {
+      "name": "preynet",
+      "version": "v2",
+      "runtime": "python",
+      "latency_ms": 11.2
+    }
+  },
+  "entities": {
+    "brands": [
+      "PNC"
+    ],
+    "phones": [],
+    "urls": []
+  },
+  "source": "web"
+}

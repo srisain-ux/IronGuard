@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "accepted.schema.json",
+  "type": "object",
+  "properties": {
+    "accepted": {
+      "const": true
+    }
+  },
+  "required": [
+    "accepted"
+  ],
+  "additionalProperties": false
+}
