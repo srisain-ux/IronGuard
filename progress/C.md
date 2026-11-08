@@ -4,9 +4,9 @@
 > Format for each entry: `[HH:MM][P<phase>] what changed | skipped | unverified`
 
 ## Now
-- Phase: P1
-- Working on: A/B/C M1 changes are merged into shared main and synchronized into local `c/main`; `make sync` passes. Local services were stopped at the last status check.
-- Blocked by: Real model inference, Safeguard loop wiring and forecast replies remain later integration work.
+- Phase: P2
+- Working on: Reef Lab feature branch `c/reef-lab`; dashboard and bridge event publisher are committed.
+- Blocked by: Real Algae training events and full evaluation artifacts remain with B and A.
 
 ## Log
 - [02:05][P1] Built `/phone`: three scripted conversations, independent next-message/replay controls, incoming-message risk/word bands/TTS/lock HUDs, weighted six-direction taxonomy compass, current/predicted kill chain, highest-attention highlight, locked address spans, ten-second breathing modal, local Safety Card actions and leaf-sheep placeholder. Added Vite/React/TS/Tailwind scaffolding and contract-derived fixtures. | skipped: live inference, parity, `/reef`, real verification/reporting and adapter metrics (outside this mock step); missing metrics/vitality show `--` | unverified: real model integration and physical phone echo. Web commit `cc7761d`.
@@ -15,6 +15,8 @@
 
 ## Requests (changes I need from another owner; they pick these up)
 - [x] @B root checkout has an uncommitted `docs/PROMPTS.md` change and untracked `api/uv.lock`; C preserved both unchanged and used a separate clean integration worktree for M2 instead of stashing, deleting, or committing B-owned files.
+- [ ] @B connect `POST /v1/zero-day` to the Algae generation/training pipeline and publish `algae.progress`, `train.progress`, and `chloroplast.ready` on `GET /v1/events`; the current endpoint only emits a demo error, so Reef cannot show a real training run yet.
+- [ ] @A populate `ml/artifacts/eval_summary.json` with evaluated PreyNet, zero-day sample-efficiency, and reliability results via `make eval`; the current seed-smoke artifact correctly leaves these Reef charts at `--`.
 - [x] @B add api/pyproject.toml, the API scaffold, and api/tests/test_smoke.py so `uv sync` and `make smoke` can run in a clean checkout. Present on shared main at M1; the smoke check now passes.
 <!-- e.g. - [ ] @B contracts/score_response: add optional field `latency_ms` (number). Why: HUD shows it. -->
 - [ ] @B `scripts/doctor.sh`: detect actual Ponytail/ECC skill/plugin entry points instead of matching any `ponytail`/`ecc` text under `.codex`; doctor reported installed but neither callable review skill was present.
@@ -22,6 +24,7 @@
 - [ ] @B update `.env.example` and `docs/PROMPTS.md` Photon setup: signup at Photon Beta produces `pho_prj_` project IDs and Bearer API keys, incompatible with Spectrum Basic auth. The bridge now detects Beta projects and uses the existing `PHOTON_SECRET` for the Beta API key; Beta uses `whsec_` Standard Webhooks secrets and an assigned sender-specific iMessage line. Keep root env names consistent; no root files changed here.
 
 ## Handoffs (things I've shipped that others can now use)
+- [x] P2 Reef: `web/src/pages/ReefPage.tsx` consumes `getMetrics`, `openEvents`, and `submitZeroDay` from `web/src/api/client.ts`; live mode uses `/v1/metrics`, `/v1/events`, and `/v1/zero-day`. `bridge/src/index.ts` publishes deduplicated masked `photon.message` previews to `/v1/events/publish` after accepted inbound messages. Mock mode uses the contract event and unavailable-metrics fixtures. No customer thread history is stored by the Reef UI.
 <!-- e.g. - [x] ml/artifacts/preynet.onnx v2 (features output = 640-d) merged in M2 -->
 - [x] P1 web: `VITE_USE_MOCKS=1 make web` → `http://localhost:5173/phone`; `web/src/demo.ts` exports `demos`, `Score`, `safetyCard(id, score)`; `web/src/compass.tsx` exports `Compass({score})` using `contracts/taxonomy.json` angles. `web/README.md` documents the local demo and runtime limits. All displayed forecasts are fixtures, not evaluation results.
 - [x] P1 Photon: `make bridge`, `make tunnel`, register `<tunnel-https-url>/webhook`, save `PHOTON_WEBHOOK_SECRET` in this worktree's ignored `bridge/.env`, restart bridge, then text the project number. `bridge/src/server.ts` exports `ONLINE`, `echoHandler`, `bridgeServer`; `bridge/README.md` gives exact setup and safe debugging by health/webhook status. Echo is `IronGuard online 🛡`; no API required, including with `MOCK_API=1`.
@@ -56,3 +59,6 @@
 - [04:36][P2] Took over Photon setup from step 3. Found the API stub, forecast bridge and quick tunnel already running in the feature worktree. Read the active tunnel hostname from cloudflared metrics, updated the existing enabled `message.received` destination to its `/webhook` URL using a stable idempotency key, and confirmed the destination through the Photon API. Public health reports ready; a signed no-op webhook returned 204 and an invalid signature returned 401. Existing signing secret remained valid, so no secret was rotated or displayed. Services remain running. | skipped: sending the two phone texts, which require the user's device; no code changes or PR | unverified: actual phone delivery of the forecast and reply-code action; bridge counters remain zero.
 
 - [04:39][P2] User confirmed the live phone test worked. Bridge health independently shows ready with 2 received events, 2 accepted replies and 0 reply failures; stub API health is healthy. This verifies the two-message phone → Photon → bridge → stub score/card → phone forecast path. | skipped: no code changes, PR, push or merge | unverified: reply-code 1/2/3 actions from a physical phone and real PreyNet/Nemotron behavior.
+
+## P2 Reef Lab
+- [04:44][P2] Built `/reef` in `c/reef-lab`: live SSE log with `[algae]`, `[critic]`, `[train]`, `[reef]`, training-loss sparkline, chloroplast card, masked Photon feed, and charts for EWR@k, zero-day before/after plus sample efficiency, and reliability. Metrics come from `/v1/metrics`; missing values show `--`. Bridge publishes masked previews to the existing API event endpoint after deduplication. Contract fixture is visibly labeled in mock mode. `make validate check-web check-bridge`, 8 bridge tests, web build, ownership guard, diff check, and browser QA passed; live API returned baseline seed-smoke lines and kept unavailable evaluation as `--`. Reviewed contract/privacy/error paths and removed duplicate mock events caused by React StrictMode. Feature commit `b93ae16`. | skipped: named Ponytail/ECC review skills, which are unavailable in this Codex session; full Algae training and evaluation are owned by B and A | unverified: a physical Photon message through the newly built feed, real training events, and evaluated PreyNet/zero-day/reliability charts.
