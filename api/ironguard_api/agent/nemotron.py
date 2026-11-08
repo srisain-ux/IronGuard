@@ -55,7 +55,7 @@ async def chat(messages: list[dict], *, model: str, temperature: float, retries:
         except (openai.RateLimitError, openai.APIConnectionError, openai.APITimeoutError) as exc:
             last = exc
         except openai.APIStatusError as exc:
-            if exc.status_code < 500:
+            if exc.status_code < 500 and exc.status_code not in (408, 409):
                 raise
             last = exc
         if attempt < retries:
@@ -69,8 +69,7 @@ async def chat_json(messages: list[dict], **kwargs) -> dict:
     try:
         return extract_json(text)
     except ValueError:  # JSONDecodeError is a ValueError
-        repair = messages + [
-            {"role": "assistant", "content": text},
+        repair = messages + ([{"role": "assistant", "content": text}] if text else []) + [
             {"role": "user", "content": "That was not valid JSON. Reply again with ONLY the "
              "corrected JSON object, no commentary, no code fences."},
         ]
