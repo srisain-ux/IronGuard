@@ -33,7 +33,8 @@ def test_every_json_route(client):
         "safety_card",
     )
     assert card["confidence"] == score["risk"]
-    assert not card["checks"]  # No fabricated tool verification.
+    # Only real tool runs appear as checks (here: the offline directory lookup).
+    assert [c["tool"] for c in card["checks"]] == ["lookup_official_contact"]
     check(
         client.post("/v1/zero-day", json={"alert": "Fake parking boot payment"}),
         "zero_day_response",

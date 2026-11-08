@@ -170,3 +170,19 @@ def test_store_manifests_loaded_and_model_loaded_once(monkeypatch, tmp_path):
                 == 200
             )
     assert len(calls) == 1
+
+
+def test_preynet_without_artifacts_serves_stub(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+
+    from ironguard_api import main
+
+    calls = []
+    monkeypatch.setattr(main, "load_model", lambda *args: calls.append(args) or object())
+    monkeypatch.setenv("IRONGUARD_MODEL", "preynet")
+    with TestClient(main.create_app(artifacts=tmp_path, store=tmp_path / "s")) as client:
+        assert client.get("/health").json()["model"] == "stub"
+    (tmp_path / "preynet.pt").write_bytes(b"x")
+    with TestClient(main.create_app(artifacts=tmp_path, store=tmp_path / "s")) as client:
+        assert client.get("/health").json()["model"] == "preynet"
+    assert [c[0] for c in calls] == ["stub", "preynet"]

@@ -38,29 +38,36 @@ def extract_json(text: str) -> dict:
     return obj
 
 
-async def chat(messages: list[dict], *, model: str, temperature: float, retries: int = 3,
-               top_p: float | None = None, max_tokens: int = 4096,
-               thinking: bool = True) -> str:
-    """One completion; exponential backoff on 429 / 5xx / connection errors / timeouts."""
+async def chat_message(messages: list[dict], *, model: str, temperature: float, retries: int = 3,
+                       top_p: float | None = None, max_tokens: int = 4096,
+                       thinking: bool = True, tools: list[dict] | None = None):
+    """One completion message (content + tool_calls); exponential backoff on 429 / 5xx /
+    connection errors / timeouts."""
     extra = {} if thinking else {"extra_body": NO_THINKING}
     if top_p is not None:
         extra["top_p"] = top_p
+    if tools:
+        extra["tools"] = tools
     last: Exception | None = None
     for attempt in range(retries + 1):
         try:
             reply = await client().chat.completions.create(
                 model=model, messages=messages, temperature=temperature,
                 max_tokens=max_tokens, **extra)
-            return reply.choices[0].message.content or ""
+            return reply.choices[0].message
         except (openai.RateLimitError, openai.APIConnectionError, openai.APITimeoutError) as exc:
             last = exc
         except openai.APIStatusError as exc:
-            if exc.status_code < 500:
+            if exc.status_code < 500 and exc.status_code not in (408, 409):
                 raise
             last = exc
         if attempt < retries:
             await asyncio.sleep(min(2 ** attempt, 30))
     raise last
+
+
+async def chat(messages: list[dict], **kwargs) -> str:
+    return (await chat_message(messages, **kwargs)).content or ""
 
 
 async def chat_json(messages: list[dict], **kwargs) -> dict:
@@ -69,8 +76,7 @@ async def chat_json(messages: list[dict], **kwargs) -> dict:
     try:
         return extract_json(text)
     except ValueError:  # JSONDecodeError is a ValueError
-        repair = messages + [
-            {"role": "assistant", "content": text},
+        repair = messages + ([{"role": "assistant", "content": text}] if text else []) + [
             {"role": "user", "content": "That was not valid JSON. Reply again with ONLY the "
              "corrected JSON object, no commentary, no code fences."},
         ]
