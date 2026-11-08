@@ -1,6 +1,7 @@
 """FastAPI entry point. All customer text is ephemeral; inference loads once."""
 
 import json
+import logging
 import os
 from collections import deque
 from contextlib import asynccontextmanager
@@ -19,11 +20,18 @@ from .routes import agent, chloroplasts, meta, reef, score, zero_day
 def create_app(*, artifacts: Path | None = None, store: Path | None = None):
     @asynccontextmanager
     async def lifespan(app):
-        app.state.mode = os.getenv("IRONGUARD_MODEL", "stub")
         configured = Path(os.getenv("IRONGUARD_ARTIFACTS", "../ml/artifacts"))
         app.state.artifacts = artifacts or (
             configured if configured.is_absolute() else ROOT / "api" / configured
         )
+        app.state.mode = os.getenv("IRONGUARD_MODEL", "stub")
+        weights = ("preynet.pt", "preynet.onnx")
+        if app.state.mode == "preynet" and not any(
+            (app.state.artifacts / name).is_file() for name in weights
+        ):
+            # /health then reports "stub", so nobody mistakes the stub for the real model.
+            logging.getLogger(__name__).warning("PreyNet artifacts missing; serving the stub")
+            app.state.mode = "stub"
         app.state.model = load_model(app.state.mode, app.state.artifacts)
         app.state.fixture = isinstance(app.state.model, FixtureModel)
         app.state.events = EventBus()
