@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { getChloroplasts, getMetrics, openEvents, submitZeroDay, useMocks, type EvalSummary } from "../api/client";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { getChloroplasts, openEvents, submitZeroDay, useMocks } from "../api/client";
 import { compileChloroplast } from "../runtime/chloroplast";
 import type { Event } from "../contracts/event";
-import { pitchMetrics } from "../api/metrics";
+import { EvaluationDashboard } from "../components/EvaluationDashboard";
 
-const colors: Record<string, string> = { PreyNet: "#e83f8f", B0: "#3fc1c0", B1: "#b9a2cf", B2: "#544ea5", B3: "#83d8d7" };
 const pct = (value: number | null | undefined) => typeof value === "number" && Number.isFinite(value) ? `${(value * 100).toFixed(0)}%` : "--";
 const number = (value: unknown, digits = 0) => typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : "--";
 const valid = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
@@ -35,12 +34,7 @@ function describe(event: Event): LogLine | null {
   return { id: Date.now() + Math.random(), prefix, message };
 }
 
-function EmptyChart({ label }: { label: string }) {
-  return <div className="chart-empty">--<small>{label}</small></div>;
-}
-
 export default function ReefPage() {
-  const [metrics, setMetrics] = useState<EvalSummary | null>(null);
   const [connected, setConnected] = useState(false);
   const [logs, setLogs] = useState<LogLine[]>([]);
   const [photon, setPhoton] = useState<PhotonLine[]>([]);
@@ -49,24 +43,30 @@ export default function ReefPage() {
   const [alert, setAlert] = useState("");
   const [jobStatus, setJobStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pipeline, setPipeline] = useState<"idle" | "queued" | "examples" | "training" | "downloading" | "ready" | "error">("idle");
   const activeJob = useRef<string | null>(null);
   const submitting = useRef(false);
   const pendingEvents = useRef<Event[]>([]);
   async function jobEvent(event: Event) {
     if (!activeJob.current || event.job_id !== activeJob.current) return;
+    if (event.type === "algae.progress") setPipeline("examples");
+    if (event.type === "train.progress") setPipeline("training");
     if (event.type === "error") {
+      setPipeline("error");
       setJobStatus("Job failed. No chloroplast was absorbed."); setBusy(false); activeJob.current = null;
     } else if (event.type === "chloroplast.ready") {
       const job = activeJob.current;
+      setPipeline("downloading");
       try {
         const manifests = await getChloroplasts();
         const manifest = manifests.find(item => item.id === event.data.id);
         if (!manifest) throw new Error("Published adapter unavailable");
         compileChloroplast(manifest);
         if (activeJob.current !== job) return;
+        setPipeline("ready");
         setAdapter({ id: manifest.id, size_bytes: manifest.size_bytes, metrics: manifest.metrics });
         setJobStatus(`CHLOROPLAST ABSORBED · ${manifest.size_bytes} bytes · ${manifest.metrics.train_seconds.toFixed(1)} s`);
-      } catch { if (activeJob.current === job) setJobStatus("Adapter announced, but download or validation failed. No absorption confirmed."); }
+      } catch { if (activeJob.current === job) { setPipeline("error"); setJobStatus("Adapter announced, but download or validation failed. No absorption confirmed."); } }
       if (activeJob.current === job) { setBusy(false); activeJob.current = null; }
     }
   }
@@ -74,8 +74,6 @@ export default function ReefPage() {
   const adapterMetrics = adapter?.metrics && typeof adapter.metrics === "object" ? adapter.metrics as Record<string, unknown> : null;
 
   useEffect(() => {
-    let active = true;
-    void getMetrics().then(value => { if (active) setMetrics(pitchMetrics(value)); }).catch(() => { if (active) setMetrics(null); });
     const stream = openEvents(event => {
       const eventKey = `${event.type}:${event.ts}:${event.job_id ?? ""}:${JSON.stringify(event.data)}`;
       if (seenEvents.current.has(eventKey)) return;
@@ -94,13 +92,14 @@ export default function ReefPage() {
       }
 
     }, setConnected);
-    return () => { active = false; stream?.close(); };
+    return () => { stream?.close(); };
   }, []);
 
   async function launch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!alert.trim() || busy) return;
     if (!useMocks && !connected) { setJobStatus("Wait for the event stream to connect, then retry."); return; }
+    setPipeline("queued");
     setBusy(true); setLoss([]); setAdapter(null); setJobStatus("Submitting alert…");
     submitting.current = true; pendingEvents.current = [];
     try {
@@ -108,45 +107,58 @@ export default function ReefPage() {
       activeJob.current = result.status === "queued" ? result.job_id : null;
       submitting.current = false;
       setJobStatus(result.status === "demo" ? "Demo endpoint: training is not connected. No adapter trained." : `Job ${result.job_id} queued.`);
-      if (result.status === "demo") setBusy(false);
+      if (result.status === "demo") { setBusy(false); setPipeline("idle"); }
       else for (const buffered of pendingEvents.current) void jobEvent(buffered);
       pendingEvents.current = [];
       setAlert("");
     } catch {
+      setPipeline("error");
       setJobStatus("Alert could not be submitted. Check the API connection."); setBusy(false);
       activeJob.current = null;
     } finally { submitting.current = false; }
   }
 
-  const models = metrics?.models ?? {};
-  const modelNames = Object.keys(models).filter(name => models[name]?.ewr_at_k?.some(valid));
-  const ewrRows = Array.from({ length: Math.max(0, ...modelNames.map(name => models[name].ewr_at_k?.length ?? 0)) }, (_, i) =>
-    Object.fromEntries([["k", i + 1], ...modelNames.map(name => [name, valid(models[name].ewr_at_k?.[i]) ? models[name].ewr_at_k?.[i] : null])]));
-  const zeroDay = metrics?.zero_day;
-  const beforeAfter = [
-    { label: "Before", ewr: zeroDay?.base_ewr_at_3 ?? null },
-    { label: "After", ewr: zeroDay?.chloroplast_ewr_at_3 ?? null },
-  ];
-  const samples = zeroDay?.sample_efficiency?.filter(point => valid(point.n) && valid(point.ewr_at_3)) ?? [];
-  const reliability = metrics?.reliability;
-  const reliabilityRows = (reliability?.conf ?? []).map((conf, i) => ({ conf, acc: reliability?.acc?.[i] ?? null })).filter(point => valid(point.conf) && valid(point.acc));
-  const hasZeroDay = beforeAfter.some(point => valid(point.ewr));
+  const stageIndex = pipeline === "ready" ? 3 : pipeline === "downloading" ? 2 : pipeline === "training" ? 1 : 0;
 
-  return <div className="page-content reef-layout">
-    <section className="reef-heading"><p className="eyebrow">ALGAE REEF LAB // OBSERVATION DECK</p><h1 className="zd-title">WATCH THE <em>MODEL</em> LEARN.</h1><p className="intro">Synthetic conversations feed a small adapter for a new scam pattern. Phones download the adapter without its training data.</p></section>
-    <div className="reef-grid">
-      <section className="zd-panel terminal reef-wide"><div className="panel-label">ZERO-DAY TERMINAL <small>{useMocks ? "MOCK EVENT FIXTURE" : connected ? "● LIVE EVENT STREAM" : "STREAM OFFLINE / WAITING"}</small></div>
-        <form className="reef-command" onSubmit={launch}><label htmlFor="zero-day-alert">&gt; new zero-day alert:</label><input aria-describedby="zero-day-privacy" id="zero-day-alert" value={alert} onChange={e => setAlert(e.target.value)} maxLength={400} placeholder="_" required disabled={busy} /><button disabled={busy || !alert.trim() || (!useMocks && !connected)} type="submit">SEND ALERT</button></form>
-        <p id="zero-day-privacy" className="reef-note">Describe a scam pattern. This alert is sent to Algae; leave private messages out.</p>
-        {jobStatus && <p className="reef-status" role="status">{jobStatus}</p>}
-        <div className="reef-terminal-log" role="log" aria-label="Algae event log" aria-live="polite">{logs.length ? logs.map(line => <p key={line.id}><span className={`reef-prefix prefix-${line.prefix}`}>[{line.prefix}]</span> {line.message}</p>) : <p className="reef-muted">[reef] Waiting for Algae events. No training job running.</p>}</div>
-        <div className="reef-terminal-bottom"><div><span className="reef-kicker">TRAINING LOSS</span>{loss.length > 1 ? <ResponsiveContainer width="100%" height={74}><LineChart data={loss}><Line dataKey="loss" stroke="#5dff9b" strokeWidth={2} dot={false} isAnimationActive={false} /></LineChart></ResponsiveContainer> : <span className="reef-value">--</span>}</div><div><span className="reef-kicker">CHLOROPLAST</span><span className="reef-value">{adapter ? "READY" : "--"}</span><small>Size {number(adapter?.size_bytes)} bytes · Train {number(adapterMetrics?.train_seconds, 1)} s · Val recall {pct(valid(adapterMetrics?.val_recall_at_1fpr) ? adapterMetrics.val_recall_at_1fpr : null)}</small></div></div>
-      </section>
-      <section className="zd-panel photon-panel"><div className="panel-label">PHOTON LIVE FEED <small>MASKED PREVIEWS</small></div><div className="photon-list" role="log" aria-label="Masked Photon messages" aria-live="polite">{photon.length ? photon.map(item => <p key={item.id}><span>↳</span> {item.preview}</p>) : <p className="reef-muted">No Photon messages in this session.</p>}</div></section>
-      <section className="zd-panel metric-panel reef-wide"><div className="panel-label">EARLY WARNING RATE <small>EWR@k · 1% FALSE ALARM TARGET</small></div>{ewrRows.length ? <><div className="reef-chart"><ResponsiveContainer width="100%" height="100%"><LineChart data={ewrRows} margin={{ top: 18, right: 22, bottom: 4, left: 0 }}><CartesianGrid stroke="#b9a2cf33" /><XAxis dataKey="k" stroke="#b3b6d7" label={{ value: "Turn k", position: "insideBottomRight", offset: -2, fill: "#b3b6d7" }} /><YAxis stroke="#b3b6d7" domain={[0, 1]} tickFormatter={pct} /><Tooltip formatter={value => pct(typeof value === "number" ? value : null)} /><Legend />{modelNames.map(name => <Line key={name} name={name} dataKey={name} stroke={colors[name] ?? "#b9a2cf"} strokeWidth={name === "PreyNet" ? 3 : 2} dot={false} connectNulls={false} isAnimationActive={false} />)}</LineChart></ResponsiveContainer></div><p className="reef-note">Dataset: {metrics?.dataset?.version ?? "--"} · PreyNet: {models.PreyNet?.ewr_at_k?.some(valid) ? "measured" : "--"}{metrics?.available === false ? " · Full evaluation unavailable" : ""}</p></> : <EmptyChart label="No measured EWR@k results." />}</section>
-      <section className="zd-panel metric-panel"><div className="panel-label">ZERO-DAY ADAPTATION <small>EWR@3 · BEFORE / AFTER</small></div>{hasZeroDay ? <div className="reef-chart"><ResponsiveContainer width="100%" height="100%"><BarChart data={beforeAfter}><CartesianGrid stroke="#b9a2cf33" /><XAxis dataKey="label" stroke="#b3b6d7" /><YAxis stroke="#b3b6d7" domain={[0, 1]} tickFormatter={pct} /><Tooltip formatter={value => pct(typeof value === "number" ? value : null)} /><Bar dataKey="ewr" name="EWR@3" fill="#e83f8f" isAnimationActive={false} /></BarChart></ResponsiveContainer></div> : <EmptyChart label="Before / after evaluation unavailable." />}<p className="reef-note">Time to protection: {number(zeroDay?.time_to_protection_s, 1)} s</p></section>
-      <section className="zd-panel metric-panel"><div className="panel-label">SAMPLE EFFICIENCY <small>SYNTHETIC POSITIVES → EWR@3</small></div>{samples.length ? <div className="reef-chart"><ResponsiveContainer width="100%" height="100%"><LineChart data={samples}><CartesianGrid stroke="#b9a2cf33" /><XAxis dataKey="n" stroke="#b3b6d7" /><YAxis stroke="#b3b6d7" domain={[0, 1]} tickFormatter={pct} /><Tooltip formatter={value => pct(typeof value === "number" ? value : null)} /><Line dataKey="ewr_at_3" name="EWR@3" stroke="#3fc1c0" strokeWidth={3} isAnimationActive={false} /></LineChart></ResponsiveContainer></div> : <EmptyChart label="Sample efficiency unavailable." />}</section>
-      <section className="zd-panel metric-panel reef-wide"><div className="panel-label">RELIABILITY DIAGRAM <small>CONFIDENCE VS. OBSERVED ACCURACY</small></div>{reliabilityRows.length ? <div className="reef-chart"><ResponsiveContainer width="100%" height="100%"><LineChart data={reliabilityRows}><CartesianGrid stroke="#b9a2cf33" /><XAxis dataKey="conf" stroke="#b3b6d7" domain={[0, 1]} type="number" tickFormatter={pct} /><YAxis stroke="#b3b6d7" domain={[0, 1]} tickFormatter={pct} /><Tooltip formatter={value => pct(typeof value === "number" ? value : null)} /><Line dataKey="acc" name="Observed accuracy" stroke="#e83f8f" strokeWidth={3} isAnimationActive={false} /></LineChart></ResponsiveContainer></div> : <EmptyChart label="Calibration results unavailable." />}<p className="reef-note">ECE before: {pct(models.PreyNet?.ece_before)} · after: {pct(models.PreyNet?.ece_after)}</p></section>
+  return <div className="reef-layout" id="reef-content">
+    <section className="page-intro reef-intro" aria-labelledby="reef-title">
+      <div><p className="eyebrow"><span className="tiny-line" /> A LIVING LAYER OF PROTECTION</p><h1 id="reef-title">A little wiser.<br /><em>With every leaf.</em></h1><p>New scam patterns become small, downloadable protections.<br className="desktop-break" /> No private conversations needed.</p></div>
+      <figure className="field-illustration"><img src="/botanical/leaf-sheep.webp" width="270" height="270" alt="A watercolor leaf sheep with pink-tipped green leaves" /><figcaption><span>02 / THE LEAF SHEEP</span>Keep the protection. Leave the rest.</figcaption></figure>
+    </section>
+    <div className="lab-content">
+      <div className="workbench">
+        <section className="pattern-book" aria-labelledby="pattern-title">
+          <p className="eyebrow">A NEW PATTERN TO LEARN</p><h2 id="pattern-title">What are you seeing?</h2><p>Describe the scam’s approach.<br />Leave people’s private messages out.</p>
+          <form className="reef-command" onSubmit={launch}>
+            <label htmlFor="zero-day-alert">New zero-day alert</label>
+            <textarea aria-describedby="zero-day-privacy" id="zero-day-alert" value={alert} onChange={e => setAlert(e.target.value)} maxLength={400} rows={3} placeholder="Fake parking notices threaten a tow unless you pay immediately through a link…" required disabled={busy} />
+            <div className="form-foot"><span>{alert.length} / 400</span><button className="primary" disabled={busy || !alert.trim() || (!useMocks && !connected)} type="submit">{busy ? "Growing protection…" : "Grow a new protection"}<span aria-hidden="true"> ↗</span></button></div>
+          </form>
+          <p id="zero-day-privacy" className="reef-note">{useMocks ? "Demo mode · no data is sent and no adapter is trained." : "Submitting sends this pattern to Algae. Never include private messages."}</p>
+          {!useMocks && !connected && <p className="reef-note" role="status">Waiting for the event stream to connect before you can submit.</p>}
+          {jobStatus && <p className="reef-status" role="status">{jobStatus}</p>}
+        </section>
+        <section className="growth" aria-labelledby="growth-title">
+          <p className="eyebrow">FROM A PATTERN TO PROTECTION</p><h2 id="growth-title">Small by nature.<br /><em>Stronger together.</em></h2>
+          <ol className="growth-trail">{[
+            { title: "Create & review examples", detail: "Nemotron generates synthetic conversations, critiques them, and removes duplicates.", symbol: "·" },
+            { title: "Train a small adapter", detail: "A chloroplast learns the pattern while the base model stays frozen.", symbol: "❧" },
+            { title: "Ready for your device", detail: "Download only the adapter. Its training conversations stay behind.", symbol: "✧" },
+          ].map((step, index) => <li key={step.title} className={stageIndex > index ? "complete" : stageIndex === index && busy ? "growing" : ""} aria-current={stageIndex === index && busy ? "step" : undefined}><span className="seed" aria-hidden="true">{stageIndex > index ? "✓" : step.symbol}</span><div><strong>{step.title}</strong><p>{step.detail}</p></div></li>)}</ol>
+          <p className="growth-status">{pipeline === "error" ? "The last job could not complete. Review the status and try again." : pipeline === "ready" ? "Adapter downloaded and validated. A new leaf of protection." : busy ? "Following your job through the reef…" : "Ready for a new pattern. No training job is running."}</p>
+        </section>
+      </div>
+      <section className="adapter-shelf" aria-label="Chloroplast status"><span className="adapter-leaf" aria-hidden="true">❧</span><div><h3>{adapter ? "A new protection has arrived." : "A place for the next protection."}</h3><p>{adapter ? String(adapter.id) : "A chloroplast appears here after a real job finishes and its download is validated."}</p></div><dl><div><dt>Size</dt><dd>{adapter ? number(adapter.size_bytes) + " B" : "--"}</dd></div><div><dt>Training</dt><dd>{valid(adapterMetrics?.train_seconds) ? number(adapterMetrics.train_seconds, 1) + " s" : "--"}</dd></div><div><dt>Val recall @ 1% FPR</dt><dd>{pct(valid(adapterMetrics?.val_recall_at_1fpr) ? adapterMetrics.val_recall_at_1fpr : null)}</dd></div></dl></section>
+      <div className="live-grid">
+        <section className="event-journal" aria-labelledby="journal-title">
+          <div className="panel-label"><h3 id="journal-title">The growth journal</h3><small>{useMocks ? "EXAMPLE EVENT" : connected ? "● LIVE STREAM" : "STREAM OFFLINE"}</small></div>
+          <div className="reef-terminal-log" role="log" aria-label="Algae event log" aria-live="polite">{logs.length ? logs.map(line => <p key={line.id}><span className={`reef-prefix prefix-${line.prefix}`}>[{line.prefix}]</span> {line.message}</p>) : <p className="reef-muted">[reef] Waiting for Algae events. No training job running.</p>}</div>
+          <div className="loss-heading"><span className="reef-kicker">TRAINING LOSS {useMocks ? "· FIXTURE" : ""}</span><strong>{number(loss.at(-1)?.loss, 3)}</strong></div>
+          {loss.length ? <div className="loss-chart"><ResponsiveContainer width="100%" height="100%"><LineChart data={loss} margin={{ top: 8, left: -24, right: 12, bottom: 0 }} accessibilityLayer><CartesianGrid stroke="#dce3d3" strokeDasharray="3 5" vertical={false} /><XAxis dataKey="step" tick={{ fontSize: 9, fill: "#60705c" }} axisLine={false} tickLine={false} /><YAxis domain={[0, "auto"]} tick={{ fontSize: 9, fill: "#60705c" }} axisLine={false} tickLine={false} /><Tooltip labelFormatter={value => `Step ${value}`} formatter={value => [number(value, 3), "Loss"]} /><Line dataKey="loss" stroke="#598550" strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} /></LineChart></ResponsiveContainer></div> : <p className="reef-note">-- · The loss curve appears as training events arrive.</p>}
+        </section>
+        <section className="photon-panel" aria-labelledby="photon-title"><div className="panel-label"><h3 id="photon-title">Ripples from Photon</h3><small>MASKED PREVIEWS</small></div><p className="reef-note">Opt-in iMessage &amp; SMS protection, connected to the reef.</p><div className="photon-list" role="log" aria-label="Masked Photon messages" aria-live="polite">{photon.length ? photon.map(item => <p key={item.id}><span aria-hidden="true">↳</span> {item.preview}</p>) : <div className="photon-empty"><span aria-hidden="true">⌁</span><strong>A quiet patch of water.</strong><p>No Photon messages in this session.<br />Masked previews will appear here.</p></div>}</div></section>
+      </div>
+      <EvaluationDashboard />
     </div>
   </div>;
 }

@@ -1,6 +1,7 @@
 import { Fragment as ReactFragment, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { Compass } from "./compass";
+import { BotanicalScene, SiteHeader, SiteFooter } from "./components/SiteChrome";
+import { ConversationInsights } from "./components/ConversationInsights";
 import { demos, safetyCard, type Score } from "./demo";
 import { getChloroplasts, openEvents, useMocks } from "./api/client";
 import { scoreLocal } from "./runtime/browser";
@@ -26,7 +27,7 @@ function tts(score: Score) {
 function Risk({ score, compact = false }: { score: Score; compact?: boolean }) {
   return (
     <div
-      className={`risk risk-${score.confidence_band} ${compact ? "compact" : ""}`}
+      className={`risk risk-${score.risk <= 0.1 ? "low" : score.confidence_band} ${compact ? "compact" : ""}`}
     >
       <div className="risk-label">
         <span className="zd-hud">RISK {score.risk.toFixed(2)}</span>
@@ -235,74 +236,29 @@ export function Phone() {
   }
 
   return (
-    <main className="app-shell zd-scanlines">
-      <div className="zd-grid-floor" aria-hidden="true" />
-      <a className="skip" href="#phone-content">
-        Skip to phone
-      </a>
-      <header className="site-header">
-        <a
-          href="/phone"
-          className="wordmark zd-neon-sign"
-          aria-label="IronGuard home"
-        >
-          IR
-          <svg className="dragonfly" viewBox="0 0 28 28" aria-hidden="true">
-            <g fill="none" stroke="currentColor" strokeWidth="1.6">
-              <ellipse cx="8" cy="9" rx="7" ry="3" transform="rotate(28 8 9)" />
-              <ellipse
-                cx="20"
-                cy="9"
-                rx="7"
-                ry="3"
-                transform="rotate(-28 20 9)"
-              />
-              <ellipse
-                cx="8"
-                cy="17"
-                rx="7"
-                ry="3"
-                transform="rotate(-28 8 17)"
-              />
-              <ellipse
-                cx="20"
-                cy="17"
-                rx="7"
-                ry="3"
-                transform="rotate(28 20 17)"
-              />
-              <path d="M14 5v21" />
-            </g>
-            <circle cx="14" cy="4" r="2" fill="currentColor" />
-          </svg>
-          NGUARD
-          <span className="brand-dot" />
-        </a>
-        <Link className="reef-nav" to="/reef">
-          REEF LAB
-        </Link>
-        <span className="header-status">
-          <i /> {useMocks ? "LOCAL DEMO" : "ON-DEVICE"} <span className="divider">/</span> ZERO DAY 2026
-        </span>
-      </header>
+    <main className="app-shell phone-shell">
+      <BotanicalScene />
+      <a className="skip" href="#phone-content">Skip to phone</a>
+      <SiteHeader page="phone" />
+      <section className="page-intro phone-intro" aria-labelledby="page-title">
+        <div>
+          <p className="eyebrow"><span className="tiny-line" /> YOUR QUIET LOOKOUT</p>
+          <h1 id="page-title">Before you tap,<br /><em>take a breath.</em></h1>
+          <p>A clearer view of where your conversation is heading.<br className="desktop-break" /> A little time to choose what happens next.</p>
+        </div>
+        <figure className="field-illustration">
+          <img src="/botanical/dragonfly.webp" alt="An iridescent watercolor dragonfly" width="270" height="270" />
+          <figcaption><span>01 / THE DRAGONFLY</span> A small lookout. A step ahead.</figcaption>
+        </figure>
+      </section>
       <div className="workspace">
-        <aside className="intro">
-          <p className="eyebrow">
-            <span className="tiny-line" /> THE LEAF SHEEP PROTOCOL
-          </p>
-          <h1>
-            See the setup.
-            <br />
-            Stop the <em>strike.</em>
-          </h1>
-          <p className="intro-copy">
-            A scam starts long before the link.
-            <br />
-            Follow the conversation. Watch its trajectory change.
-          </p>
+        <aside className="intro casebook">
+          <p className="eyebrow">THE CONVERSATION GARDEN</p>
+          <h2>Every story<br /><em>starts somewhere.</em></h2>
+          <p className="intro-copy">Follow one message at a time. Notice when an ordinary conversation takes a turn.</p>
           <div className="demo-selector">
             <p className="zd-hud">
-              CHOOSE AN INCIDENT <span>↓</span>
+              CHOOSE A CONVERSATION <span>↓</span>
             </p>
             {demos.map((d, i) => (
               <button
@@ -340,7 +296,7 @@ export function Phone() {
           <LocalMessage manifests={manifests} />
           {debug && <DebugParity />}
         </aside>
-        <section className="phone-wrap" aria-label="IronGuard phone demo">
+        <section className="phone-wrap" aria-label="Reef Guard phone simulation">
           <div className="phone-hardware">
             <div className="phone-status" aria-hidden="true">
               <span>9:41</span>
@@ -349,13 +305,13 @@ export function Phone() {
             </div>
             <div className="phone-content" id="phone-content">
               <div className="phone-top">
-                <span className="zd-hud">IRONGUARD / MESSAGES</span>
+                <span className="zd-hud">REEF GUARD / MESSAGES</span>
                 <span className="local-pill">◉ LOCAL</span>
               </div>
               {!demo ? (
                 <>
                   <div className="list-heading">
-                    <p className="eyebrow">YOUR PERIMETER</p>
+                    <p className="eyebrow">A LITTLE ROOM TO PAUSE</p>
                     <h2 ref={heading} tabIndex={-1}>
                       Conversations
                     </h2>
@@ -499,18 +455,18 @@ export function Phone() {
         </section>
         <aside className="analysis" aria-label="Trajectory analysis">
           <div className="analysis-heading">
-            <p className="eyebrow">LIVE TRAJECTORY</p>
+            <p className="eyebrow">CONVERSATION OUTLOOK</p>
             <span className="zd-hud">
               {demo
-                ? `INCIDENT 0x0${demos.indexOf(demo) + 1}`
-                : "AWAITING INCIDENT"}
+                ? `FIELD NOTE 0${demos.indexOf(demo) + 1}`
+                : "READY WHEN YOU ARE"}
             </span>
           </div>
           {score && demo ? (
             <>
               <section className="zd-panel trajectory">
                 <div className="panel-heading">
-                  <h2>Trajectory HUD</h2>
+                  <h2>Reading the ripples.</h2>
                   <span className="signal-icon" aria-hidden="true">
                     ⌁
                   </span>
@@ -583,27 +539,21 @@ export function Phone() {
             </>
           ) : (
             <section className="zd-panel waiting">
-              <div className="radar" aria-hidden="true">
-                ⌖
-              </div>
-              <h2>The forecast lives here.</h2>
+              <div className="outlook-orbit" aria-hidden="true"><span>⌁</span></div>
+              <h2>Not every ripple is a warning.</h2>
               <p>
                 Open a conversation and reveal its next message. Each turn adds
                 context to the trajectory.
               </p>
               <div className="waiting-line" />
-              <span className="zd-hud">MODEL EVALUATION METRICS: --</span>
+              <span className="zd-hud">ONE MESSAGE. A LITTLE MORE CONTEXT.</span>
             </section>
           )}
           <LeafSheep manifests={manifests} status={adapterStatus} />
         </aside>
       </div>
-      <footer className="site-footer">
-        <span>DESIGNED TO CATCH THE SETUP, BEFORE THE ASK.</span>
-        <span>
-          HACKUTD <b>ZERO DAY</b> / 2026
-        </span>
-      </footer>
+      {demo && score && scores && <ConversationInsights key={demo.id} scores={scores.slice(0, count)} conversation={demo.conversation} />}
+      <SiteFooter />
       {target && <CoolDown target={target} close={() => setTarget(null)} />}
     </main>
   );

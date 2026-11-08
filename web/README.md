@@ -1,4 +1,10 @@
-# IronGuard browser runtime
+# Reef Guard web app
+
+The botanical interface uses the supplied watercolor artwork, paper surfaces, and Reef Guard shield. `/phone` retains the three conversation simulations, local scoring, trajectory compass, safety cards, protected addresses, cooldown, and adapter vitality. Below a selected conversation, the turn inspector shows risk history, family probabilities, and message attention using only revealed messages.
+
+`/reef` retains the zero-day form, job-correlated event journal, loss curve, validated adapter download, and masked Photon feed. The evaluation section adds model filters, a prefix inspector, lead-time comparisons, calibration sample counts, human/synthetic test-set selection, and measurement tables. **Published evaluation** is bundled directly from `ml/artifacts/eval_summary.json` at build time; **service feed** reads `/v1/metrics` (the unavailable contract fixture in mock mode). The source and generation time are visible. Rebuild to refresh the published snapshot. Overall and zero-day `available: false` flags suppress their numbers, and missing data remains `--`.
+
+Design tokens and behavior are documented in `docs/THEME.md`. Original asset provenance is in `web/public/botanical/README.md`. No new dependencies or remote fonts are needed for the redesign.
 
 Run `pnpm --dir web install`, then `VITE_USE_MOCKS=1 make web` and open http://localhost:5173/phone. Mocks use bundled contract fixtures, with three scripted incident timelines; no inference or training quality is claimed. The typed-message scorer returns the score contract fixture in mock mode.
 
@@ -17,7 +23,7 @@ VITE_USE_MOCKS=0 make web
 
 Open `/phone?debug=1` and press **Compare public example** to compare the full bundled public pig-butchering example thread with `/v1/score`. Both sides disable adapters. The table checks risk, each family probability, winning stage/TTS probability, attention, and agreement on labels/confidence/lock. A PASS requires all numeric differences ≤ .02 and a real API model; fixture/stub mode remains UNVERIFIED. Run `make api` with the matching checkpoint and temperatures for real parity. The comparison never accepts typed customer text.
 
-`/reef` reads `/v1/metrics`, streams `/v1/events`, and submits an explicit zero-day alert to `/v1/zero-day`. It correlates completion/error with the returned job ID, buffers events racing the POST response, and only says `CHLOROPLAST ABSORBED · {size} bytes · {train_seconds} s` after downloading and validating the published adapter. A demo response never claims training occurred. Charts show available evaluation data; absent values remain `--`. The API on shared main currently returns a demo job until B connects training.
+`/reef` reads `/v1/metrics`, streams `/v1/events`, and submits an explicit zero-day alert to `/v1/zero-day`. It correlates completion/error with the returned job ID, buffers events racing the POST response, and only says `CHLOROPLAST ABSORBED · {size} bytes · {train_seconds} s` after downloading and validating the published adapter. A demo response never claims training occurred. Real training requires B's Algae/Nemotron service and A's model artifacts.
 
 Safety Cards and block/report actions remain local demos; no verification or report is sent. Suspicious addresses remain non-interactive; the Cool-Down Shield reveals plain text after ten seconds. Current stages come from script labels and predicted stages come from the runtime. Animations honor reduced motion.
 

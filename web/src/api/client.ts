@@ -25,12 +25,33 @@ export async function getExampleSafetyCard(): Promise<SafetyCard> {
   throw new Error("A live Safety Card needs a local score and verified checks.");
 }
 
+export interface EvaluationRates {
+  ewr_at_k?: (number | null)[];
+  lead_time?: number | null;
+  strike_recall?: number | null;
+  fpr?: number | null;
+  hard_neg_fpr?: number | null;
+}
+
+export interface EvaluationModel extends EvaluationRates {
+  ece_before?: number | null;
+  ece_after?: number | null;
+  ece_risk_before?: number | null;
+  ece_risk_after?: number | null;
+  flicker_rate?: number | null;
+  flicker_rate_no_lock?: number | null;
+  lead_time_std?: number | null;
+  abstains?: boolean;
+  test_human?: EvaluationRates;
+}
+
 export interface EvalSummary {
   available?: boolean;
-  dataset?: { version?: string };
-  models?: Record<string, { ewr_at_k?: (number | null)[]; lead_time?: number | null; ece_before?: number | null; ece_after?: number | null }>;
-  zero_day?: { available?: boolean; base_ewr_at_3?: number | null; chloroplast_ewr_at_3?: number | null; sample_efficiency?: { n: number; ewr_at_3: number | null }[]; time_to_protection_s?: number | null } | null;
-  reliability?: { bins?: number[]; acc?: (number | null)[]; conf?: (number | null)[] };
+  generated_at?: string;
+  dataset?: { version?: string; n_conversations?: number; n_test?: number; n_test_human?: number; notes?: string[]; split_denominators?: Record<string, { scam?: number; benign?: number; hard_negative?: number }> };
+  models?: Record<string, EvaluationModel>;
+  zero_day?: { available?: boolean; family?: string; base_ewr_at_3?: number | null; chloroplast_ewr_at_3?: number | null; sample_efficiency?: { n: number; ewr_at_3: number | null }[]; time_to_protection_s?: number | null; notes?: string[] } | null;
+  reliability?: { bins?: number[]; acc?: (number | null)[]; conf?: (number | null)[]; count?: (number | null)[] };
 }
 
 export async function getMetrics(): Promise<EvalSummary | null> {
