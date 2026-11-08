@@ -29,8 +29,8 @@ api:                 ## real model (needs ml/artifacts/preynet.pt)
 	IRONGUARD_MODEL=preynet python3 scripts/run_api.py uvicorn ironguard_api.main:app --port 8000 --reload
 api-stub:            ## stub model, no artifacts needed
 	IRONGUARD_MODEL=stub python3 scripts/run_api.py uvicorn ironguard_api.main:app --port 8000 --reload
-web:
-	cd web && pnpm dev --port 5173
+web:                 ## live API by default; VITE_USE_MOCKS=1 make web for fixtures
+	cd web && VITE_USE_MOCKS=$${VITE_USE_MOCKS:-0} pnpm dev --port 5173
 bridge:
 	cd bridge && pnpm dev
 tunnel:              ## public URL for the Photon webhook → bridge

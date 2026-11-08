@@ -42,7 +42,8 @@ AXES = ("pretext", "sender_persona", "opening_hook", "urgency_tactic", "payment_
         "victim_reaction", "writing_style", "brand_or_authority")
 PLAN = """You design variations of ONE new text-message scam for a defensive training set.
 Scam alert: {alert}
-Return ONLY compact JSON: {{"family_id":"zd_short_snake_case","label":"under 60 characters","axes":{{{axes}}}}}
+Return ONLY compact JSON: {{"family_id":"...","label":"...","axes":{{{axes}}}}}
+family_id is "zd_" plus 1-4 lowercase words joined by underscores that name this scam. label is a plain name for it, under 60 characters.
 Each axis holds exactly 4 different short values (under 12 words each) describing how this scam can vary.
 Never write real phone numbers, domains or names of real people."""
 CALL_TIMEOUT = 150  # seconds: a 5-conversation batch takes 30-60 s with 8 in flight
@@ -53,16 +54,9 @@ class JobError(Exception):
     """Message is safe to show on the public SSE stream."""
 
 
-def trainer():
-    try:
-        from ironguard_ml.chloroplast import train
-    except ModuleNotFoundError as exc:
-        if exc.name != "ironguard_ml.chloroplast":
-            raise
-        # shortcut: zero-weight placeholder until A lands chloroplast.py; its ids end in "_stub"
-        from ironguard_ml.stub import train
+def trainer():  # a function so tests can swap in a fake trainer
+    from ironguard_ml.chloroplast import train
 
-        logging.getLogger(__name__).warning("ironguard_ml.chloroplast missing: using the stub trainer")
     return train
 
 
@@ -82,7 +76,7 @@ def parse_plan(reply: dict, alert: str) -> tuple[str, str, dict]:
     if not (isinstance(family, str) and re.fullmatch(r"zd_[a-z0-9_]{1,40}", family)):
         family = "zd_" + hashlib.sha1(alert.encode()).hexdigest()[:8]
     label = reply.get("label")
-    label = label.strip()[:80] if isinstance(label, str) and label.strip() else alert[:77]
+    label = label.strip()[:80] if isinstance(label, str) and label.strip() not in ("", "...") else alert[:77]
     return family, label, clean
 
 
