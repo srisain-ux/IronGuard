@@ -42,6 +42,13 @@ def _l2_normalize(vectors: np.ndarray) -> np.ndarray:
     return (vectors / np.maximum(norms, 1e-12)).astype(np.float32)
 
 
+def _encode(texts: list[str], encoder: Encoder | None) -> np.ndarray:
+    vectors = _l2_normalize(np.asarray((encoder or minilm_encoder())(texts), dtype=np.float32))
+    if vectors.shape != (len(texts), EMB_DIM):
+        raise ValueError(f"encoder returned {vectors.shape}, expected {(len(texts), EMB_DIM)}")
+    return vectors
+
+
 def _save_atomic(path: Path, vector: np.ndarray) -> None:
     fd, tmp = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
     try:
@@ -69,25 +76,25 @@ def _load_cached(path: Path) -> np.ndarray | None:
 def embed_texts(
     texts: Sequence[str],
     encoder: Encoder | None = None,
-    cache_dir: Path = CACHE_DIR,
+    cache_dir: Path | None = CACHE_DIR,
     model_id: str = MODEL_ID,
 ) -> np.ndarray:
     """(len(texts), 384) float32, L2-normalized. Only cache misses reach the encoder.
 
     Pass a distinct `model_id` with any non-default `encoder` (e.g. the ONNX one from the §4.1
     parity rule) so its vectors never share cache entries with the sentence-transformers ones.
+    `cache_dir=None` touches no disk: inference on customer text must use it (AGENTS.md rule 8).
     """
     if not texts:
         return np.zeros((0, EMB_DIM), dtype=np.float32)
+    if cache_dir is None:
+        return _encode(list(texts), encoder)
     cache_dir.mkdir(parents=True, exist_ok=True)
     paths = [cache_dir / f"{cache_key(t, model_id)}.npy" for t in texts]
     vectors = {p: _load_cached(p) for p in set(paths)}
     misses = {p: t for p, t in zip(paths, texts) if vectors[p] is None}
     if misses:
-        encode = encoder or minilm_encoder()
-        fresh = _l2_normalize(np.asarray(encode(list(misses.values())), dtype=np.float32))
-        if fresh.shape != (len(misses), EMB_DIM):
-            raise ValueError(f"encoder returned {fresh.shape}, expected {(len(misses), EMB_DIM)}")
+        fresh = _encode(list(misses.values()), encoder)
         for path, vector in zip(misses, fresh):
             _save_atomic(path, vector)
             vectors[path] = vector
@@ -97,7 +104,7 @@ def embed_texts(
 def turn_vectors(
     turns: Sequence[Turn],
     encoder: Encoder | None = None,
-    cache_dir: Path = CACHE_DIR,
+    cache_dir: Path | None = CACHE_DIR,
     model_id: str = MODEL_ID,
 ) -> np.ndarray:
     """(len(turns), 385): [embedding of the role-prefixed text, is_them]."""
@@ -114,7 +121,7 @@ def prefix_sequence(vectors: np.ndarray, k: int) -> np.ndarray:
 def mean_turn_embedding(
     conv: Conversation,
     encoder: Encoder | None = None,
-    cache_dir: Path = CACHE_DIR,
+    cache_dir: Path | None = CACHE_DIR,
     model_id: str = MODEL_ID,
 ) -> np.ndarray:
     """Mean of the 384-d turn embeddings (is_them flag excluded); used for near-duplicate removal."""

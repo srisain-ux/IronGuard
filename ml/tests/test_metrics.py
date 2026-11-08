@@ -10,6 +10,7 @@ from ironguard_ml.metrics import (
     ScoredConversation,
     benign_fpr,
     ewr_at_k,
+    flicker_rate,
     hard_neg_fpr,
     lead_time,
     strike_recall,
@@ -48,7 +49,7 @@ def test_first_turn_strike_and_last_chance_warning():
 def test_undefined_is_null():
     assert summarize([], .5) == {
         "ewr_at_k": [None] * 6, "lead_time": None,
-        "strike_recall": None, "hard_neg_fpr": None,
+        "strike_recall": None, "hard_neg_fpr": None, "fpr": None,
     }
     with pytest.raises(ValueError, match="benign VAL"):
         threshold_at_fpr([row([1], 0)])
@@ -91,6 +92,20 @@ def test_independent_cross_check():
         assert [ewr_at_k(rows, threshold, k) for k in range(1, 7)] == [
             count / len(rows) for count in early_counts
         ]
+
+
+def test_flicker_rate_hand_computed():
+    T, F = True, False
+    states = [
+        [F, T, F, T],     # on, off, on again: flickers
+        [T, F, F, T, T],  # starts on, gap, back on: flickers
+        [F, T, T, F],     # on then off for good: no flicker
+        [T, T, T],        # steady lock: no flicker
+        [F, F, F],        # never warned: excluded from the denominator
+    ]
+    assert flicker_rate(states) == 2 / 4
+    assert flicker_rate([[F, F]]) is None
+    assert flicker_rate([]) is None
 
 
 @pytest.mark.parametrize("risks", [[math.nan], [math.inf], [-.1], [1.1], []])
