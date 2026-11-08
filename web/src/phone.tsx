@@ -2,6 +2,11 @@ import { Fragment as ReactFragment, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Compass } from "./compass";
 import { demos, safetyCard, type Score } from "./demo";
+import { getChloroplasts, openEvents, useMocks } from "./api/client";
+import { scoreLocal } from "./runtime/browser";
+import { LeafSheep } from "./components/LeafSheep";
+import { DebugParity, LocalMessage } from "./components/RuntimeTools";
+import type { ChloroplastManifest } from "./contracts/chloroplast";
 
 const stages = [
   { id: "bait", label: "🎣 BAIT" },
@@ -15,7 +20,7 @@ function tts(score: Score) {
   return score.turns_to_strike.bucket === "none"
     ? "NO STRIKE FORECAST"
     : score.turns_to_strike.bucket === "0"
-      ? "STRIKE TURN"
+      ? "STRIKE NEXT TURN"
       : `T-${score.turns_to_strike.bucket} TURNS TO STRIKE`;
 }
 function Risk({ score, compact = false }: { score: Score; compact?: boolean }) {
@@ -142,7 +147,31 @@ export function Phone() {
   const heading = useRef<HTMLHeadingElement>(null);
   const demo = demos.find((d) => d.id === selected);
   const count = demo ? counts[demo.id] : 1;
-  const score = demo?.scores[count - 1];
+  const [manifests, setManifests] = useState<ChloroplastManifest[]>([]);
+  const [adapterStatus, setAdapterStatus] = useState("");
+  const [runtimeStatus, setRuntimeStatus] = useState("");
+  const [liveScores, setLiveScores] = useState<{ id: string; scores: Score[] } | null>(null);
+  const scores = useMocks ? demo?.scores : liveScores?.id === demo?.id ? liveScores?.scores : undefined;
+  const score = scores?.[count - 1];
+  const debug = new URLSearchParams(window.location.search).get("debug") === "1";
+  useEffect(() => {
+    let active = true;
+    const refresh = () => void getChloroplasts().then(value => { if (active) { setManifests(value); setAdapterStatus(""); } }).catch(() => { if (active) setAdapterStatus("Adapter refresh unavailable; existing adapters retained."); });
+    refresh();
+    const stream = openEvents(event => { if (event.type === "chloroplast.ready") refresh(); }, () => {});
+    const poll = window.setInterval(refresh, 60_000);
+    return () => { active = false; stream?.close(); clearInterval(poll); };
+  }, []);
+  useEffect(() => {
+    let active = true;
+    setLiveScores(null);
+    if (!demo || useMocks) return;
+    setRuntimeStatus("Hatching dragonfly…");
+    void scoreLocal(demo.conversation.turns.slice(0, count), manifests, status => { if (active) setRuntimeStatus(status); })
+      .then(result => { if (active) { setLiveScores({ id: demo.id, scores: result }); setRuntimeStatus("ON-DEVICE FORECAST"); } })
+      .catch(() => { if (active) setRuntimeStatus("Browser model unavailable. Install A’s exported artifacts and retry. No text was uploaded."); });
+    return () => { active = false; };
+  }, [demo, count, manifests]);
   const prime = score
     ? score.attention.indexOf(Math.max(...score.attention))
     : -1;
@@ -204,7 +233,7 @@ export function Phone() {
         "Open the company’s app yourself, or use the number printed on your bank card. Never use the number in this message.",
       );
   }
-  const mocks = import.meta.env.VITE_USE_MOCKS !== "0";
+
   return (
     <main className="app-shell zd-scanlines">
       <div className="zd-grid-floor" aria-hidden="true" />
@@ -253,7 +282,7 @@ export function Phone() {
           REEF LAB
         </Link>
         <span className="header-status">
-          <i /> LOCAL DEMO <span className="divider">/</span> ZERO DAY 2026
+          <i /> {useMocks ? "LOCAL DEMO" : "ON-DEVICE"} <span className="divider">/</span> ZERO DAY 2026
         </span>
       </header>
       <div className="workspace">
@@ -307,6 +336,8 @@ export function Phone() {
               </p>
             </div>
           </div>
+          <LocalMessage manifests={manifests} />
+          {debug && <DebugParity />}
         </aside>
         <section className="phone-wrap" aria-label="IronGuard phone demo">
           <div className="phone-hardware">
@@ -401,15 +432,15 @@ export function Phone() {
                             ↳ this message primed the lock
                           </p>
                         )}
-                        {turn.sender === "them" && (
+                        {turn.sender === "them" && scores?.[i] && (
                           <div className="message-hud">
-                            <Risk score={demo.scores[i]} compact />
+                            <Risk score={scores[i]} compact />
                             <details>
                               <summary>Trajectory at this message</summary>
-                              <p>{demo.scores[i].family.label}</p>
+                              <p>{scores[i].family.label}</p>
                               <p>
                                 NEXT:{" "}
-                                {demo.scores[i].next_stage.stage.toUpperCase()}
+                                {scores[i].next_stage.stage.toUpperCase()}
                               </p>
                             </details>
                           </div>
@@ -455,11 +486,8 @@ export function Phone() {
                   </div>
                 </>
               )}
-              <div className="mock-footer">
-                SCRIPTED MOCKS ·{" "}
-                {mocks
-                  ? "NO NETWORK INFERENCE"
-                  : "LIVE MODEL UNAVAILABLE — USING DEMO"}
+              <div className="mock-footer" role="status">
+                {useMocks ? "SCRIPTED MOCKS · NO NETWORK INFERENCE" : runtimeStatus || "ON-DEVICE RUNTIME"}
               </div>
             </div>
             <div className="home-indicator" aria-hidden="true" />
@@ -566,61 +594,7 @@ export function Phone() {
               <span className="zd-hud">MODEL EVALUATION METRICS: --</span>
             </section>
           )}
-          <div className="sheep">
-            <svg
-              viewBox="0 0 70 56"
-              role="img"
-              aria-label="Leaf sheep companion"
-            >
-              <g fill="#5dff9b" stroke="#184f48" strokeWidth="1.5">
-                <ellipse
-                  cx="20"
-                  cy="24"
-                  rx="8"
-                  ry="18"
-                  transform="rotate(-35 20 24)"
-                />
-                <ellipse cx="33" cy="20" rx="8" ry="18" />
-                <ellipse
-                  cx="47"
-                  cy="24"
-                  rx="8"
-                  ry="18"
-                  transform="rotate(35 47 24)"
-                />
-              </g>
-              <ellipse cx="35" cy="40" rx="26" ry="13" fill="#dfefd9" />
-              <path
-                d="M18 32 16 20M48 32 51 20"
-                stroke="#dfefd9"
-                strokeWidth="5"
-                strokeLinecap="round"
-              />
-              <circle cx="26" cy="37" r="2" fill="#100a37" />
-              <circle cx="43" cy="37" r="2" fill="#100a37" />
-              <path
-                d="M32 43q3 3 6 0"
-                fill="none"
-                stroke="#100a37"
-                strokeWidth="1.5"
-              />
-            </svg>
-            <div>
-              <strong>Leaf Sheep</strong>
-              <p>
-                Adapter vitality <span>--</span>
-              </p>
-              <div
-                className="vitality"
-                role="img"
-                aria-label="Adapter vitality unavailable: no adapter loaded"
-              >
-                <span />
-              </div>
-              <small>No chloroplast loaded</small>
-            </div>
-            <span className="chloro-badge">BASE</span>
-          </div>
+          <LeafSheep manifests={manifests} status={adapterStatus} />
         </aside>
       </div>
       <footer className="site-footer">

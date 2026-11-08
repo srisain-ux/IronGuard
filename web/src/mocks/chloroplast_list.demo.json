@@ -1,0 +1,29 @@
+[
+  {
+    "id": "cp_zd_parking_boot_001",
+    "family_id": "zd_parking_boot",
+    "label": "Fake campus parking boot fee",
+    "alert": "Texts claim UTD parking issued a boot; pay $45 at a link within 1 hour.",
+    "created_at": "2026-11-08T03:12:00Z",
+    "half_life_hours": 72,
+    "feature_dim": 640,
+    "hidden_dim": 32,
+    "weights": {
+      "w1": "AAAA",
+      "b1": "AAAA",
+      "w2": "AAAA",
+      "b2": "AAAA"
+    },
+    "threshold": 0.62,
+    "metrics": {
+      "n_pos": 120,
+      "n_neg": 1620,
+      "train_seconds": 4.8,
+      "generate_seconds": 95.0,
+      "val_auc": 0.0,
+      "val_recall_at_1fpr": 0.0
+    },
+    "size_bytes": 82436,
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  }
+]

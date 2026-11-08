@@ -1,17 +1,32 @@
-# IronGuard phone demo
+# IronGuard browser runtime
 
-From the repo root, run `VITE_USE_MOCKS=1 make web`, then open http://localhost:5173/phone.
+Run `pnpm --dir web install`, then `VITE_USE_MOCKS=1 make web` and open http://localhost:5173/phone. Mocks use bundled contract fixtures, with three scripted incident timelines; no inference or training quality is claimed. The typed-message scorer returns the score contract fixture in mock mode.
 
-Choose Anna, PNC security, or the benign wrong-number thread. Use **Next message** to reveal one turn. At Anna's third turn the exact contract example shows `0.74 · UNCERTAIN`, `T-2 TURNS TO STRIKE`, and lock-on. Finish the thread to review the locked example domain through the ten-second Cool-Down Shield. Replay and thread switching preserve independent turn counters.
+For real inference, run `VITE_USE_MOCKS=0 make web`. The predev/prebuild step (`pnpm --dir web models:prepare`) copies A's `ml/artifacts/preynet.onnx` and `temperature.json` into ignored `web/public/models/`, and stages each installed runtime's matching WASM. No model is trained or exported by the web build. A missing export shows an unavailable message; customer text is never used as an API fallback. Refresh after installing new artifacts. The A3 express drop is on `origin/a/main` until its main merge; it can be tested without modifying ML files:
 
-All scores are explicitly scripted, schema-shaped UI fixtures. The base turn-three score and two conversations are copied from `contracts/examples/`; the other prefixes and the bank conversation are local demo scripts, not model evaluation. No real verification, blocking, reporting, model inference or API parity is claimed. Missing evaluation and adapter metrics display `--`.
+```sh
+git fetch origin
+git show origin/a/main:ml/artifacts/preynet.onnx > web/public/models/preynet.onnx
+git show origin/a/main:ml/artifacts/temperature.json > web/public/models/temperature.json
+VITE_USE_MOCKS=0 make web
+```
 
-The compass imports angles from `contracts/taxonomy.json`. Its vector uses the six scam-family probabilities, with SVG zero degrees pointing north; benign contributes no direction. Opposing equal probabilities show no dominant direction. Needle length is the supplied risk. Stage labels use the script's current stage; the dashed label uses the forecast's next stage.
+`src/runtime/embed.ts` uses transformers.js v3, `Xenova/all-MiniLM-L6-v2` fp32, mean pooling, L2 normalization, and exact `[THEM] ` / `[ME] ` prefixes. Only model assets use the browser cache. `preynet.ts` sends `turn_vecs` float32 `[1, turns, 385]` into onnxruntime-web, left-truncates to 12 turns, and reads `family_logits`, `stage_logits`, `tts_logits`, `attention`, `features` per A3's handoff. It calibrates each head with `{family,next_stage,tts}` temperatures and replays prefix risks for hysteresis, reading `theta_lock` from the artifact (fallback .70), release threshold .40, two THEM turns below release. ME turns do not reset or advance that count.
 
-No fetch or text input exists in this mock experience. Safety Card buttons show local instructions. Suspicious addresses are non-interactive spans with screen-reader labels. Reveal displays plain text only; it never navigates. The native modal traps focus, closes with Escape, and restores focus. Pulse and breathing animations honor reduced motion.
+`chloroplast.ts` decodes row-major float32 little-endian weights and computes the erf GELU adapter on 640 features. Fired adapters raise risk, can replace the family and always lock. Malformed adapters are contained; vitality never gates inference. `/phone` downloads manifests from `GET /v1/chloroplasts`, refreshes on `chloroplast.ready` and every minute, and draws a green cerata badge and vitality meter per manifest. Vitality is `0.5^(age_hours/half_life_hours)` and is display only. Mock badge weights are deliberately placeholder contract data and cannot protect a message.
 
-`VITE_USE_MOCKS=0` still uses scripts and visibly states that the live phone model is unavailable. The real browser runtime and parity view are outside this mock task.
+Open `/phone?debug=1` and press **Compare public example** to compare the first three turns of the bundled public pig-butchering example with `/v1/score`. Both sides disable adapters. The table checks risk, each family probability, winning stage/TTS probability, attention, and agreement on labels/confidence/lock. A PASS requires all numeric differences ≤ .02 and a real API model; fixture/stub mode remains UNVERIFIED. Run `make api` with the matching checkpoint and temperatures for real parity. The comparison never accepts typed customer text.
 
-`/reef` reads `/v1/metrics` and subscribes to `/v1/events` in live mode. It shows Algae and training progress, masked Photon previews, adapter status, EWR@k, zero-day adaptation and sample efficiency, and reliability. Missing evaluation values display `--`; the current seed smoke artifact has no PreyNet, zero-day, or calibration result. Mock mode uses contract fixtures and labels its event as a fixture. A zero-day alert goes to `/v1/zero-day` only when submitted in live mode; the current API returns a demo-only job until the Algae pipeline is connected.
+`/reef` reads `/v1/metrics`, streams `/v1/events`, and submits an explicit zero-day alert to `/v1/zero-day`. It correlates completion/error with the returned job ID, buffers events racing the POST response, and only says `CHLOROPLAST ABSORBED · {size} bytes · {train_seconds} s` after downloading and validating the published adapter. A demo response never claims training occurred. Charts show available evaluation data; absent values remain `--`. The API on shared main currently returns a demo job until B connects training.
 
-Checks: `make check-web` and `pnpm --dir web build`.
+Safety Cards and block/report actions remain local demos; no verification or report is sent. Suspicious addresses remain non-interactive; the Cool-Down Shield reveals plain text after ten seconds. Current stages come from script labels and predicted stages come from the runtime. Animations honor reduced motion.
+
+## Prove privacy in DevTools
+
+1. Start with `VITE_USE_MOCKS=0 make web` after preparing A's artifacts. Open `/phone` without the debug query.
+2. Open DevTools → **Network**, choose **All**, enable **Preserve log**, and clear existing entries.
+3. Enter a unique synthetic message in **Message to score locally** and press **Score on this device**. Wait for the local result. First use downloads model/tokenizer/WASM assets; later uses reuse the model cache.
+4. Inspect every new request's URL, Query String Parameters and Payload. Search for your unique phrase. No request may contain the phrase, and there must be no `POST /v1/score`. Manifest GETs, SSE and fixed asset downloads contain no message text.
+5. Repeat after switching the browser offline, once model assets are cached. Local scoring must still work; optional manifest/stream refreshes can fail without disabling base inference. A fixture result or an unavailable-artifact message proves only the UI boundary, not real local inference.
+
+Checks: `make validate check-web check-bridge`, `pnpm --dir web test`, `pnpm --dir web build`. Runtime tests cover calibration, prefixes, global attention after truncation, lock boundaries, adapter arithmetic/thresholds, malformed weights, vitality and parity failures.

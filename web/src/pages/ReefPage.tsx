@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { getMetrics, openEvents, submitZeroDay, useMocks, type EvalSummary } from "../api/client";
+import { getChloroplasts, getMetrics, openEvents, submitZeroDay, useMocks, type EvalSummary } from "../api/client";
+import { compileChloroplast } from "../runtime/chloroplast";
 import type { Event } from "../contracts/event";
 
 const colors: Record<string, string> = { PreyNet: "#e83f8f", B0: "#3fc1c0", B1: "#b9a2cf", B2: "#544ea5", B3: "#83d8d7" };
@@ -47,6 +48,27 @@ export default function ReefPage() {
   const [alert, setAlert] = useState("");
   const [jobStatus, setJobStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const activeJob = useRef<string | null>(null);
+  const submitting = useRef(false);
+  const pendingEvents = useRef<Event[]>([]);
+  async function jobEvent(event: Event) {
+    if (!activeJob.current || event.job_id !== activeJob.current) return;
+    if (event.type === "error") {
+      setJobStatus("Job failed. No chloroplast was absorbed."); setBusy(false); activeJob.current = null;
+    } else if (event.type === "chloroplast.ready") {
+      const job = activeJob.current;
+      try {
+        const manifests = await getChloroplasts();
+        const manifest = manifests.find(item => item.id === event.data.id);
+        if (!manifest) throw new Error("Published adapter unavailable");
+        compileChloroplast(manifest);
+        if (activeJob.current !== job) return;
+        setAdapter({ id: manifest.id, size_bytes: manifest.size_bytes, metrics: manifest.metrics });
+        setJobStatus(`CHLOROPLAST ABSORBED · ${manifest.size_bytes} bytes · ${manifest.metrics.train_seconds.toFixed(1)} s`);
+      } catch { if (activeJob.current === job) setJobStatus("Adapter announced, but download or validation failed. No absorption confirmed."); }
+      if (activeJob.current === job) { setBusy(false); activeJob.current = null; }
+    }
+  }
   const seenEvents = useRef(new Set<string>());
   const adapterMetrics = adapter?.metrics && typeof adapter.metrics === "object" ? adapter.metrics as Record<string, unknown> : null;
 
@@ -64,10 +86,12 @@ export default function ReefPage() {
       }
       const line = describe(event);
       if (line) setLogs(current => [...current, line].slice(-60));
-      if (event.type === "train.progress" && valid(event.data.step) && valid(event.data.loss)) {
+      if (submitting.current) pendingEvents.current = [...pendingEvents.current, event].slice(-100);
+      else void jobEvent(event);
+      if (event.type === "train.progress" && (!activeJob.current || event.job_id === activeJob.current) && valid(event.data.step) && valid(event.data.loss)) {
         setLoss(current => [...current, { step: event.data.step as number, loss: event.data.loss as number }].slice(-100));
       }
-      if (event.type === "chloroplast.ready") setAdapter(event.data);
+
     }, setConnected);
     return () => { active = false; stream?.close(); };
   }, []);
@@ -75,14 +99,22 @@ export default function ReefPage() {
   async function launch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!alert.trim() || busy) return;
-    setBusy(true);
+    if (!useMocks && !connected) { setJobStatus("Wait for the event stream to connect, then retry."); return; }
+    setBusy(true); setLoss([]); setAdapter(null); setJobStatus("Submitting alert…");
+    submitting.current = true; pendingEvents.current = [];
     try {
       const result = await submitZeroDay(alert.trim());
-      setJobStatus(result.status === "demo" ? "Demo endpoint: training is not connected." : `Job ${result.job_id} queued.`);
+      activeJob.current = result.status === "queued" ? result.job_id : null;
+      submitting.current = false;
+      setJobStatus(result.status === "demo" ? "Demo endpoint: training is not connected. No adapter trained." : `Job ${result.job_id} queued.`);
+      if (result.status === "demo") setBusy(false);
+      else for (const buffered of pendingEvents.current) void jobEvent(buffered);
+      pendingEvents.current = [];
       setAlert("");
     } catch {
-      setJobStatus("Alert could not be submitted. Check the API connection.");
-    } finally { setBusy(false); }
+      setJobStatus("Alert could not be submitted. Check the API connection."); setBusy(false);
+      activeJob.current = null;
+    } finally { submitting.current = false; }
   }
 
   const models = metrics?.models ?? {};
@@ -103,7 +135,8 @@ export default function ReefPage() {
     <section className="reef-heading"><p className="eyebrow">ALGAE REEF LAB // OBSERVATION DECK</p><h1 className="zd-title">WATCH THE <em>MODEL</em> LEARN.</h1><p className="intro">Synthetic conversations feed a small adapter for a new scam pattern. Phones download the adapter without its training data.</p></section>
     <div className="reef-grid">
       <section className="zd-panel terminal reef-wide"><div className="panel-label">ZERO-DAY TERMINAL <small>{useMocks ? "MOCK EVENT FIXTURE" : connected ? "● LIVE EVENT STREAM" : "STREAM OFFLINE / WAITING"}</small></div>
-        <form className="reef-command" onSubmit={launch}><label htmlFor="zero-day-alert">&gt; new zero-day alert:</label><input id="zero-day-alert" value={alert} onChange={e => setAlert(e.target.value)} maxLength={400} placeholder="Describe a new scam pattern" /><button disabled={busy || !alert.trim()} type="submit">SEND ALERT</button></form>
+        <form className="reef-command" onSubmit={launch}><label htmlFor="zero-day-alert">&gt; new zero-day alert:</label><input aria-describedby="zero-day-privacy" id="zero-day-alert" value={alert} onChange={e => setAlert(e.target.value)} maxLength={400} placeholder="_" required disabled={busy} /><button disabled={busy || !alert.trim() || (!useMocks && !connected)} type="submit">SEND ALERT</button></form>
+        <p id="zero-day-privacy" className="reef-note">Describe a scam pattern. This alert is sent to Algae; leave private messages out.</p>
         {jobStatus && <p className="reef-status" role="status">{jobStatus}</p>}
         <div className="reef-terminal-log" role="log" aria-label="Algae event log" aria-live="polite">{logs.length ? logs.map(line => <p key={line.id}><span className={`reef-prefix prefix-${line.prefix}`}>[{line.prefix}]</span> {line.message}</p>) : <p className="reef-muted">[reef] Waiting for Algae events. No training job running.</p>}</div>
         <div className="reef-terminal-bottom"><div><span className="reef-kicker">TRAINING LOSS</span>{loss.length > 1 ? <ResponsiveContainer width="100%" height={74}><LineChart data={loss}><Line dataKey="loss" stroke="#5dff9b" strokeWidth={2} dot={false} isAnimationActive={false} /></LineChart></ResponsiveContainer> : <span className="reef-value">--</span>}</div><div><span className="reef-kicker">CHLOROPLAST</span><span className="reef-value">{adapter ? "READY" : "--"}</span><small>Size {number(adapter?.size_bytes)} bytes · Train {number(adapterMetrics?.train_seconds, 1)} s · Val recall {pct(valid(adapterMetrics?.val_recall_at_1fpr) ? adapterMetrics.val_recall_at_1fpr : null)}</small></div></div>
