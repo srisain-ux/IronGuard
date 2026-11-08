@@ -16,6 +16,8 @@
 - [23:39][P0] Validation: `make validate` passes (15 schemas, 16 examples), `make check-api` passes (24 tests), `make smoke` passes (3 smoke tests, including live HTTP SSE/disconnect), and `make api-stub` starts on port 8000 with `/health` verified. Installed uv/Python 3.11 locally. | Skipped: web/bridge typechecks explicitly report pending when manifests are absent; normal checks execute automatically once C lands. | Unverified: curated name-list scrubbing is demo-only, not general PII recognition. Dependency bootstrap runs API-only fixtures until `ml/pyproject.toml` arrives, then switches to normal editable uv resolution.
 - 
 
+- [03:48][P1] M1: stopped the active Algae producer cleanly to freeze its saved records; committed all seven B-owned generated dataset updates. Saved counts: {'bank_impersonation': 58, 'benign': 582, 'carrier_support': 73, 'family_emergency': 104, 'job_task': 66, 'pig_butchering': 67, 'toll_delivery': 66}; total 1016. make validate, make check-api (31 tests), and make validate-data pass. | Skipped: completing remaining generation quotas during the merge window; generation can resume from saved records. | Unverified: synthetic-label quality beyond existing factory checks and schema validation.
+
 ## Requests (changes I need from another owner; they pick these up)
 
 - [ ] @A: supply `ml/pyproject.toml` (`ironguard-ml`), `ironguard_ml.stub.load(artifacts_dir)` and `ironguard_ml.infer.load(artifacts_dir)` returning `Model.score(turns, chloroplasts)` per MODEL_SPEC. A0 is in progress per member B; API currently uses a labeled contract fixture and has a loader delegation test.
