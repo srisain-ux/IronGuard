@@ -1,6 +1,6 @@
 # PLAYBOOK.md: how three people ship IronGuard in 12 hours without merge hell
 
-> Owner: B. Read top to bottom once at H0 (about 10 min). After that, use the tables.
+> Owner: B. **For what to do right now, follow `docs/PROMPTS.md` (the step-by-step script with the current clock times).** This file is the background: why the stack, roles, merge rules and model choices are what they are. The clock times in §5 were the original plan.
 > Companion files: `AGENTS.md` (rules for agents), `docs/MODEL_SPEC.md` (the model), `docs/PROMPTS.md` (copy-paste prompts), `PROGRESS.md` (phase gates), `docs/THEME.md` (look).
 
 ---
@@ -184,7 +184,7 @@ git switch a/main                        # your member branch (b/main, c/main)
 | −5 min | everyone | `./scripts/merge-window.sh <your finished worktree branches>`: merges them into your member branch, rebases on `origin/main`, runs checks, pushes. Open or refresh your PR (`[A][M2] …`) |
 | 0 | B | Merge in this order, running `make smoke` after each: **contracts** (if any) → **A (ml)** → **B (api)** → **C (web, bridge)** |
 | +5 | B | If smoke fails: the owner of that area has **10 min** to push a fix, otherwise B reverts that PR (`git revert -m 1 <merge-sha>`). **Never debug on main.** |
-| +10 | everyone | `git switch <x>/main && git pull --rebase origin main && git push --force-with-lease`. In any still-open worktree: `git rebase <x>/main`. Update `progress/<X>.md`. B updates `PROGRESS.md` gates |
+| +10 | everyone | `git switch <x>/main && git pull --rebase origin main && git push --force-with-lease && make sync`. In any still-open worktree: `git rebase <x>/main`. Update `progress/<X>.md`. B updates `PROGRESS.md` gates |
 
 **Express lanes (any time, no window needed):** B's data-only PRs (`data/generated/**`) and A's artifact-only PRs (`ml/artifacts/**`). One writer and no code means they can't conflict.
 

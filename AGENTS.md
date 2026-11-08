@@ -70,11 +70,14 @@ progress/           one progress log per member (no shared progress file = no co
 
 | Command | What it does |
 |---|---|
+| `make doctor` | Checks this laptop is ready (tools, member letter, branch, keys); prints the fix for every problem |
+| `make sync` | After every merge: installs whatever packages exist, then runs `make smoke` |
 | `make validate` | Validates every schema and example in `contracts/` (run before every PR) |
 | `make check-ml` / `check-api` / `check-web` / `check-bridge` | Lint + tests for one area |
 | `make smoke` | Starts api (stub model if artifacts are missing), hits every endpoint, type-checks web and bridge |
 | `make api` / `make api-stub` | Runs the API with the real model / the stub model |
 | `make web` / `make bridge` / `make tunnel` | Run the web app / Photon bridge / cloudflared tunnel to the bridge |
+| `make algae` | B only: run the Nemotron data factory (reads `NVIDIA_API_KEY` from `api/.env`) |
 | `make train` / `make eval` / `make export` | A only: train PreyNet, write `eval_summary.json`, export ONNX |
 
 ## 7. Git workflow for agents (T3 Code / Claude Code / Codex)
