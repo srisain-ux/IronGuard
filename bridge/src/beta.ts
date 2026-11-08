@@ -134,7 +134,7 @@ export function betaTransport(config: {
                 headers: {
                   Authorization: `Bearer ${config.apiKey}`,
                   "Content-Type": "application/json",
-                  "Idempotency-Key": `ironguard-echo:${messageId}`,
+                  "Idempotency-Key": `ironguard-forecast:${messageId}`,
                 },
                 body: JSON.stringify({
                   spaceId,
@@ -152,6 +152,7 @@ export function betaTransport(config: {
         {
           id: messageId,
           direction: "inbound",
+          platform: message.platform as "sms" | "imessage",
           content:
             content.type === "text"
               ? { type: "text", text: content.text as string }
