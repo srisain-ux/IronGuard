@@ -13,6 +13,7 @@ from ironguard_ml.data import (
     load_corpus,
     load_jsonl,
     make_prefixes,
+    prepare_splits,
     stratified_split,
 )
 
@@ -116,6 +117,8 @@ def test_exclude_held_out_drops_family_from_train_and_val_only():
         assert all(c.family != "job_task" for c in base[name])
     assert base["test"] == splits["test"]
     assert any(c.family == "job_task" for c in base["test"])
+    all_job_task = {c.id for n in ("train", "val", "test") for c in splits[n] if c.family == "job_task"}
+    assert {c.id for c in base["held_out"]} == all_job_task
     assert exclude_held_out(splits, held_out=None) == splits
 
 
@@ -178,6 +181,7 @@ def test_load_jsonl_parses_valid_records(tmp_path):
         record(strike_turn=None),  # scam family without a strike_turn
         record(family="made_up_family"),  # outside the taxonomy pattern
         record(turns=[]),  # schema: minItems 1
+        record(hard_negative=True),  # hard negatives are benign by definition
     ],
 )
 def test_load_jsonl_rejects_contract_violations_with_location(tmp_path, bad):
@@ -196,21 +200,82 @@ def test_load_jsonl_rejects_invalid_json(tmp_path):
         load_jsonl(path)
 
 
-def test_load_corpus_reads_generated_and_seed_and_keeps_test_human_apart(tmp_path):
+def test_load_corpus_with_a_version_uses_generated_only_and_keeps_test_human_apart(tmp_path):
     write_jsonl(tmp_path / "generated" / "v1" / "train.jsonl", [record("g_1")])
     write_jsonl(tmp_path / "seed" / "seed.jsonl", [record("s_1")])
     write_jsonl(tmp_path / "test_human" / "human.jsonl", [record("h_1")])
 
     corpus = load_corpus("v1", tmp_path)
 
-    assert [c.id for c in corpus.main] == ["g_1", "s_1"]
+    assert [c.id for c in corpus.main] == ["g_1"]
     assert [c.id for c in corpus.test_human] == ["h_1"]
 
 
-def test_load_corpus_tolerates_missing_generated_dir(tmp_path):
+def test_load_corpus_without_a_version_is_seed_only(tmp_path):
+    write_jsonl(tmp_path / "generated" / "v1" / "train.jsonl", [record("g_1")])
     write_jsonl(tmp_path / "seed" / "seed.jsonl", [record("s_1")])
 
-    assert [c.id for c in load_corpus("v1", tmp_path).main] == ["s_1"]
+    assert [c.id for c in load_corpus(None, tmp_path).main] == ["s_1"]
+
+
+def test_load_corpus_fails_loudly_on_a_missing_or_empty_version(tmp_path):
+    write_jsonl(tmp_path / "seed" / "seed.jsonl", [record("s_1")])
+
+    with pytest.raises(DataError, match="no conversations under"):
+        load_corpus("v11", tmp_path)
+
+
+def test_committed_seed_set_loads_and_covers_every_family_and_hard_negatives():
+    corpus = load_corpus(None)
+
+    families = {c.family for c in corpus.main}
+    assert families == set(FAMILIES)
+    assert sum(c.hard_negative for c in corpus.main) >= 5
+    assert any(c.strike_turn is not None and len(c.turns) > c.strike_turn + 1 for c in corpus.main)
+    assert len({c.id for c in corpus.main}) == len(corpus.main)
+
+
+def test_load_jsonl_rejects_benign_conversation_with_scam_stages(tmp_path):
+    path = tmp_path / "bad.jsonl"
+    bad = record(family="benign", strike_turn=None, turns=[{"sender": "them", "text": "hi", "stage": "bait"}])
+    write_jsonl(path, [bad])
+
+    with pytest.raises(DataError, match="stage 'benign'"):
+        load_jsonl(path)
+
+
+def test_load_corpus_rejects_zero_day_families_in_the_base_corpus(tmp_path):
+    write_jsonl(tmp_path / "generated" / "v1" / "zd.jsonl", [record("zd_1", family="zd_parking_boot")])
+
+    with pytest.raises(DataError, match="not a base family"):
+        load_corpus("v1", tmp_path)
+
+
+def test_load_jsonl_rejects_float_strike_turn(tmp_path):
+    path = tmp_path / "bad.jsonl"
+    path.write_text(json.dumps(record()).replace('"strike_turn": 1', '"strike_turn": 1.0') + "\n")
+
+    with pytest.raises(DataError, match="must be an integer"):
+        load_jsonl(path)
+
+
+def test_load_jsonl_accepts_unicode_line_separators_inside_text(tmp_path):
+    path = tmp_path / "u.jsonl"
+    rec = record("u_1", turns=[
+        {"sender": "them", "text": "a b 👍", "stage": "bait"},
+        {"sender": "them", "text": "pay", "stage": "strike"},
+    ])
+    path.write_text(json.dumps(rec, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    assert load_jsonl(path)[0].turns[0].text == "a b 👍"
+
+
+def test_load_jsonl_reports_non_utf8_files_as_data_errors(tmp_path):
+    path = tmp_path / "latin.jsonl"
+    path.write_bytes(b'{"text": "caf\xe9"}\n')
+
+    with pytest.raises(DataError, match="not valid UTF-8"):
+        load_jsonl(path)
 
 
 def test_load_corpus_rejects_id_shared_between_train_data_and_test_human(tmp_path):
@@ -232,3 +297,52 @@ def test_drop_near_duplicates_keeps_first_of_each_cluster():
 
     assert [c.id for c in kept] == ["a", "c"]
     assert dropped == ["b"]
+
+
+def test_drop_near_duplicates_threshold_is_strict_and_empty_input_is_fine():
+    convs = [conv("a"), conv("b")]
+    vectors = {"a": [1.0, 0.0], "b": [0.6, 0.8]}  # cosine exactly 0.6
+
+    kept, _ = drop_near_duplicates(convs, lambda c: np.array(vectors[c.id]), threshold=0.6 - 1e-6)
+    assert [c.id for c in kept] == ["a"]
+    kept, _ = drop_near_duplicates(convs, lambda c: np.array(vectors[c.id]), threshold=0.6 + 1e-6)
+    assert [c.id for c in kept] == ["a", "b"]
+    assert drop_near_duplicates([], lambda c: np.zeros(2)) == ([], [])
+
+
+def test_drop_near_duplicates_drops_copies_of_reference_but_never_the_reference():
+    train_like, human = conv("a_train"), conv("z_human")
+    vectors = {"a_train": [1.0, 0.0], "z_human": [1.0, 0.0]}
+
+    kept, dropped = drop_near_duplicates(
+        [train_like], lambda c: np.array(vectors[c.id]), reference=[human]
+    )
+
+    assert kept == [] and dropped == ["a_train"]
+
+
+def test_prepare_splits_dedupes_before_splitting_and_vs_test_human(tmp_path):
+    scams = [conv(f"pb_{i:02d}", "pig_butchering") for i in range(12)]
+    benign = [conv(f"bn_{i:02d}", "benign", strike=None) for i in range(12)]
+    copy_of_human = conv("pb_99", "pig_butchering")
+    write_jsonl(tmp_path / "seed" / "s.jsonl", [_to_record(c) for c in scams + benign + [copy_of_human]])
+    write_jsonl(tmp_path / "test_human" / "h.jsonl", [_to_record(conv("h_01", "pig_butchering"))])
+    axes = np.eye(30)
+    directions = {c.id: axes[i] for i, c in enumerate(scams + benign)}  # all mutually orthogonal
+    directions["pb_99"] = directions["h_01"] = axes[26]  # train-side copy of a human test conversation
+    directions["pb_11"] = directions["pb_10"] = axes[10]  # near-duplicate pair inside main
+
+    splits, dropped = prepare_splits(None, lambda c: directions[c.id], seed=0, data_dir=tmp_path)
+
+    assert "pb_99" in dropped and "pb_11" in dropped and "pb_10" not in dropped
+    assert [c.id for c in splits["test_human"]] == ["h_01"]
+    ids = [c.id for name in ("train", "val", "test") for c in splits[name]]
+    assert len(ids) == len(set(ids)) == 24 + 1 - len(dropped)
+
+
+def _to_record(c):
+    return {
+        "id": c.id, "family": c.family, "channel": c.channel, "hard_negative": c.hard_negative,
+        "turns": [{"sender": t.sender, "text": t.text, "stage": t.stage} for t in c.turns],
+        "strike_turn": c.strike_turn, "source": {"generator": c.generator},
+    }

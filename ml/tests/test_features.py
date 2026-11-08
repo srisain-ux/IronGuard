@@ -86,6 +86,50 @@ def test_embeddings_are_l2_normalized_float32(tmp_path):
     assert np.allclose(np.linalg.norm(out, axis=1), 1.0, atol=1e-5)
 
 
+def test_different_model_id_never_shares_cache_entries(tmp_path):
+    first, second = FakeEncoder(), FakeEncoder()
+
+    embed_texts(["[THEM] hi"], first, tmp_path)
+    embed_texts(["[THEM] hi"], second, tmp_path, model_id="onnx-variant")
+
+    assert first.seen == second.seen == ["[THEM] hi"]
+    assert len(list(tmp_path.iterdir())) == 2
+
+
+@pytest.mark.parametrize("damage", [b"", b"not an npy file", "wrong_shape", "wrong_dtype"])
+def test_corrupt_or_mismatched_cache_entry_is_re_encoded(tmp_path, damage):
+    good = embed_texts(["[THEM] hi"], FakeEncoder(), tmp_path)
+    (entry,) = tmp_path.iterdir()
+    if damage == "wrong_shape":
+        np.save(entry, np.zeros(7, dtype=np.float32))
+    elif damage == "wrong_dtype":
+        np.save(entry, np.zeros(EMB_DIM, dtype=np.float64))
+    else:
+        entry.write_bytes(damage)
+    enc = FakeEncoder()
+
+    healed = embed_texts(["[THEM] hi"], enc, tmp_path)
+
+    assert enc.seen == ["[THEM] hi"]
+    assert np.array_equal(healed, good)
+
+
+@pytest.mark.parametrize("rows, cols", [(1, EMB_DIM), (2, 768)])
+def test_encoder_with_wrong_output_shape_is_rejected_and_nothing_is_cached(tmp_path, rows, cols):
+    with pytest.raises(ValueError, match="encoder returned"):
+        embed_texts(["[THEM] a", "[THEM] b"], lambda texts: np.ones((rows, cols)), tmp_path)
+
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_prefix_sequence_returns_a_copy_not_a_view():
+    vectors = np.zeros((3, TURN_DIM), dtype=np.float32)
+
+    prefix_sequence(vectors, 3)[0, 0] = 9.0
+
+    assert vectors[0, 0] == 0.0
+
+
 def test_empty_input_returns_empty_matrix(tmp_path):
     assert embed_texts([], FakeEncoder(), tmp_path).shape == (0, EMB_DIM)
 

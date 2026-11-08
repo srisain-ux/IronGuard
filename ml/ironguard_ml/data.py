@@ -13,7 +13,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"
 SCHEMA_PATH = ROOT / "contracts" / "schemas" / "conversation.schema.json"
-TAXONOMY = json.loads((ROOT / "contracts" / "taxonomy.json").read_text())
+TAXONOMY = json.loads((ROOT / "contracts" / "taxonomy.json").read_text(encoding="utf-8"))
 
 FAMILIES = tuple(f["id"] for f in TAXONOMY["families"])
 STAGES = tuple(s["id"] for s in TAXONOMY["stages"])
@@ -23,7 +23,7 @@ SPLIT_FRACTIONS = (("train", 0.70), ("val", 0.15), ("test", 0.15))
 NEAR_DUPLICATE_COSINE = 0.95
 HELD_OUT_DEFAULT = "job_task"
 
-_VALIDATOR = jsonschema.Draft202012Validator(json.loads(SCHEMA_PATH.read_text()))
+_VALIDATOR = jsonschema.Draft202012Validator(json.loads(SCHEMA_PATH.read_text(encoding="utf-8")))
 
 
 class DataError(ValueError):
@@ -58,7 +58,7 @@ class Prefix:
     family: str
     next_stage: str
     tts: str  # bucket of strike_turn - k; "none" for benign or once the strike has been seen
-    early: bool  # a flag here is early iff k <= strike_turn
+    early: bool  # a flag here is early iff k <= strike_turn; also the §4.3 mask for the tts head
     lead_time: int  # strike_turn - (k - 1) while early, else 0
 
 
@@ -79,8 +79,14 @@ def _parse(record: dict, where: str) -> Conversation:
     first_strike = next((i for i, t in enumerate(turns) if t.stage == "strike"), None)
     if strike != first_strike:
         raise DataError(f"{where}: strike_turn={strike} but first strike stage is {first_strike}")
+    if strike is not None and type(strike) is not int:  # JSON 3.0 passes the schema's "integer"
+        raise DataError(f"{where}: strike_turn must be an integer, got {strike!r}")
     if (record["family"] == "benign") != (strike is None):
         raise DataError(f"{where}: strike_turn must be null exactly when family is benign")
+    if record.get("hard_negative") and record["family"] != "benign":
+        raise DataError(f"{where}: hard_negative is only valid on benign conversations")
+    if record["family"] == "benign" and any(t.stage != "benign" for t in turns):
+        raise DataError(f"{where}: every turn of a benign conversation must have stage 'benign'")
     return Conversation(
         id=record["id"],
         family=record["family"],
@@ -94,7 +100,12 @@ def _parse(record: dict, where: str) -> Conversation:
 
 def load_jsonl(path: Path) -> list[Conversation]:
     convs = []
-    for i, line in enumerate(path.read_text().splitlines(), 1):
+    try:
+        # split("\n"), not splitlines(): U+2028 etc. are legal inside JSON strings
+        lines = path.read_text(encoding="utf-8").split("\n")
+    except UnicodeDecodeError as exc:
+        raise DataError(f"{path}: not valid UTF-8: {exc.reason}") from exc
+    for i, line in enumerate(lines, 1):
         if not line.strip():
             continue
         where = f"{path}:{i}"
@@ -110,12 +121,28 @@ def _load_dir(directory: Path) -> list[Conversation]:
     return [c for p in sorted(directory.glob("*.jsonl")) for c in load_jsonl(p)]
 
 
-def load_corpus(version: str = "v1", data_dir: Path = DATA_DIR) -> Corpus:
-    """Load data/generated/<version>/ + data/seed/ (main) and data/test_human/ (test only)."""
-    main = _load_dir(data_dir / "generated" / version) + _load_dir(data_dir / "seed")
+def load_corpus(version: str | None = None, data_dir: Path = DATA_DIR) -> Corpus:
+    """Load the training corpus and the test-only human set.
+
+    `version=None` loads data/seed/ only: a smoke fixture so the pipeline runs before Nemotron
+    data lands. A version loads data/generated/<version>/ only (seed excluded, so training stays
+    Nemotron-only per §3.3) and fails loudly if it is missing or empty. data/test_human/ is
+    always returned separately.
+    """
+    if version is None:
+        main = _load_dir(data_dir / "seed")
+    else:
+        main = _load_dir(data_dir / "generated" / version)
+        if not main:
+            raise DataError(f"no conversations under {data_dir / 'generated' / version}")
     test_human = _load_dir(data_dir / "test_human")
     seen: set[str] = set()
     for conv in main + test_human:
+        if conv.family not in FAMILIES:
+            raise DataError(
+                f"{conv.id}: family '{conv.family}' is not a base family; keep zero-day data "
+                "out of the base corpus (it would leak into training or test)"
+            )
         if conv.id in seen:
             raise DataError(f"duplicate conversation id '{conv.id}' (possible test contamination)")
         seen.add(conv.id)
@@ -173,7 +200,10 @@ def stratified_split(
     """Conversation-level 70/15/15 split stratified by family (hard negatives are their own stratum).
 
     Any `split` field on incoming records is ignored: A owns the splits. Output depends only on
-    the set of conversations and the seed, not on input order.
+    the set of conversations and the seed, not on input order. Train always gets at least one
+    member per stratum, but val or test can be empty for strata under about 7 conversations.
+    Keep `seed` fixed across training seeds (0/1/2). Quotas shift as the corpus grows, so refit
+    after any new data lands; never score a model fit on an older snapshot against a newer split.
     """
     strata: dict[str, list[Conversation]] = defaultdict(list)
     for conv in convs:
@@ -193,29 +223,76 @@ def stratified_split(
 def exclude_held_out(
     splits: Mapping[str, Sequence[Conversation]], held_out: str | None = HELD_OUT_DEFAULT
 ) -> dict[str, tuple[Conversation, ...]]:
-    """Base-training view: drop the held-out family from train and val, keep it in test (LOFO, §6.3)."""
-    return {
+    """Base-training view for LOFO (§6.3): the held-out family leaves train and val.
+
+    Adds a "held_out" key with every conversation of that family from train, val and test, the
+    zero-day test pool. Never feed it to the chloroplast: it shares a generator with its test
+    split. "test" is unchanged, so base-family metrics still see the family's own test share.
+    """
+    if held_out is None:
+        return {name: tuple(convs) for name, convs in splits.items()}
+    base = {
         name: tuple(c for c in convs if name not in ("train", "val") or c.family != held_out)
         for name, convs in splits.items()
     }
+    pool = tuple(c for name in ("train", "val", "test") for c in splits[name] if c.family == held_out)
+    return {**base, "held_out": pool}
+
+
+MeanEmbedding = Callable[[Conversation], np.ndarray]
+
+
+def _unit_vectors(convs: Sequence[Conversation], mean_embedding: MeanEmbedding) -> np.ndarray:
+    vecs = np.asarray([mean_embedding(c) for c in convs], dtype=np.float32).reshape(len(convs), -1)
+    return vecs / np.maximum(np.linalg.norm(vecs, axis=1, keepdims=True), 1e-12)
 
 
 def drop_near_duplicates(
     convs: Iterable[Conversation],
-    mean_embedding: Callable[[Conversation], np.ndarray],
+    mean_embedding: MeanEmbedding,
     threshold: float = NEAR_DUPLICATE_COSINE,
+    reference: Sequence[Conversation] = (),
 ) -> tuple[list[Conversation], list[str]]:
-    """Keep the first of each near-duplicate cluster (by id order); return (kept, dropped ids)."""
+    """Keep the first of each near-duplicate cluster (by id order); return (kept, dropped ids).
+
+    `reference` conversations (e.g. test_human) are never dropped or returned, but anything
+    too close to one of them is dropped, so train data cannot echo the cross-generator test set.
+    """
     ordered = sorted(convs, key=lambda c: c.id)
+    if not ordered:
+        return [], []
+    ref_vecs = _unit_vectors(reference, mean_embedding) if reference else None
+    vecs = _unit_vectors(ordered, mean_embedding)
+    seen = np.zeros((len(reference) + len(ordered), vecs.shape[1]), dtype=np.float32)
+    n_seen = 0
+    if ref_vecs is not None:
+        seen[: len(reference)] = ref_vecs
+        n_seen = len(reference)
     kept: list[Conversation] = []
-    kept_vecs: list[np.ndarray] = []
     dropped: list[str] = []
-    for conv in ordered:
-        vec = np.asarray(mean_embedding(conv), dtype=np.float32)
-        vec = vec / max(float(np.linalg.norm(vec)), 1e-12)
-        if kept_vecs and float(np.max(np.stack(kept_vecs) @ vec)) > threshold:
+    for conv, vec in zip(ordered, vecs):
+        if n_seen and float(np.max(seen[:n_seen] @ vec)) > threshold:
             dropped.append(conv.id)
             continue
+        seen[n_seen] = vec
+        n_seen += 1
         kept.append(conv)
-        kept_vecs.append(vec)
     return kept, dropped
+
+
+def prepare_splits(
+    version: str | None,
+    mean_embedding: MeanEmbedding,
+    seed: int = 0,
+    data_dir: Path = DATA_DIR,
+) -> tuple[dict[str, tuple[Conversation, ...]], list[str]]:
+    """load -> drop near-duplicates (before splitting, also vs test_human) -> 70/15/15 split.
+
+    Returns (splits incl. a "test_human" key, ids dropped as near-duplicates). Use this instead
+    of calling stratified_split directly so near-copies can never straddle two splits.
+    """
+    corpus = load_corpus(version, data_dir)
+    kept, dropped = drop_near_duplicates(
+        corpus.main, mean_embedding, reference=corpus.test_human
+    )
+    return {**stratified_split(kept, seed), "test_human": corpus.test_human}, dropped
