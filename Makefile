@@ -2,7 +2,7 @@
 # Targets for code that doesn't exist yet are part of the plan; each owner makes theirs work in P0.
 SHELL := /bin/bash
 UV := $(shell command -v uv 2>/dev/null || echo $(HOME)/.local/bin/uv)
-.PHONY: validate check-ml check-api check-web check-bridge smoke api api-stub web bridge tunnel train eval export setup-a setup-b setup-c
+.PHONY: sync validate check-ml check-api check-web check-bridge smoke api api-stub web bridge tunnel train eval export setup-a setup-b setup-c
 
 validate:            ## contracts + taxonomy + examples
 	$(UV) run --quiet --with jsonschema python scripts/validate_contracts.py
@@ -32,6 +32,12 @@ bridge:
 	cd bridge && pnpm dev
 tunnel:              ## public URL for the Photon webhook → bridge
 	cloudflared tunnel --url http://localhost:8787
+
+sync:                ## after every merge: install whatever packages exist, then smoke (safe before ml/web/bridge land)
+	@if [ -f ml/pyproject.toml ]; then (cd ml && $(UV) sync); else echo "ml package pending (member A)"; fi
+	@if [ -f web/package.json ]; then (cd web && pnpm install); else echo "web package pending (member C)"; fi
+	@if [ -f bridge/package.json ]; then (cd bridge && pnpm install); else echo "bridge package pending (member C)"; fi
+	$(MAKE) smoke
 
 smoke:               ## must pass before every PR and at every merge window
 	$(MAKE) validate

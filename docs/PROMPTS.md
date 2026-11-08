@@ -109,7 +109,7 @@ It's merge window <M0|M1|M2|M3|M4>. I am member <A|B|C> (check `git config --get
 All PRs for this merge window are merged into main.
 1. Run: git switch <letter>/main && git pull --rebase origin main && git push --force-with-lease
 2. Rebase every still-open worktree branch <letter>/* onto <letter>/main (conflicts only in my files; otherwise stop and tell me).
-3. Run: cd api && uv sync && cd ../web && pnpm install && cd ../bridge && pnpm install && cd .. && make smoke
+3. Run: make sync   (installs whatever packages exist and runs make smoke; parts not merged yet are skipped)
 4. If smoke fails: say exactly which part and whose folder. If mine, fix it in a new commit on <letter>/main, push, and give me the PR link.
    If someone else's, write the exact error for me to send them.
 5. If I'm member B and smoke is green: tick this window's gate in PROGRESS.md with the current time, commit, push b/main, give me the PR link.
@@ -165,7 +165,9 @@ Scaffold bridge/ (Node 20 + TS + tsx + spectrum-ts, PINNED version) as an ECHO b
 ```
 
 ## 🛑 WAIT → 🔀 MERGE M0 (§M) → 🔄 SYNC (§S)
-Gate: `make smoke` green on all 3 laptops. **Contracts are now frozen (add-only).**
+Gate: `make sync` green on all 3 laptops. **Contracts are now frozen (add-only).**
+
+> **If your A0/C0 branch didn't make it into M0:** nothing to do now. It's still in your worktree; the §M prompt at M1 lists every unmerged branch and merges it along with your Step 1 work.
 
 ---
 
