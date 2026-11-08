@@ -1,24 +1,23 @@
 import { createServer, type IncomingMessage } from "node:http";
-import { createHash } from "node:crypto";
 import {
   text,
   type WebhookRawRequest,
   type WebhookRawResult,
 } from "spectrum-ts";
 
-export const ONLINE = "IronGuard online 🛡";
 export type BridgeStatus =
   | "needs_credentials"
   | "needs_webhook_secret"
   | "connecting"
   | "ready"
   | "connection_failed";
-export type EchoMessage = {
+export type BridgeMessage = {
   id: string;
   direction: "inbound" | "outbound";
+  platform?: string;
   content: { type: string; text?: string };
 };
-export type EchoSpace = {
+export type BridgeSpace = {
   id: string;
   send(input: ReturnType<typeof text>): Promise<unknown>;
 };
@@ -26,46 +25,10 @@ export type WebhookTransport = {
   signatureHeaders?: string[];
   webhook(
     request: WebhookRawRequest,
-    handler: (space: EchoSpace, message: EchoMessage) => void,
+    handler: (space: BridgeSpace, message: BridgeMessage) => void,
   ): Promise<WebhookRawResult>;
   stop?(): Promise<void>;
 };
-
-// Hashes only, in memory, bounded and expired after 30 minutes. No thread text is retained.
-export function echoHandler(
-  sendFailed: () => void = () => {},
-  replyAccepted: () => void = () => {},
-) {
-  const seen = new Map<string, number>();
-  return async (space: EchoSpace, message: EchoMessage) => {
-    if (message.direction !== "inbound") return;
-    const content = message.content;
-    if (
-      content.type === "text" &&
-      (typeof content.text !== "string" || !/[\p{L}\p{N}]/u.test(content.text))
-    )
-      return;
-    const now = Date.now();
-    for (const [key, at] of seen) if (now - at > 30 * 60_000) seen.delete(key);
-    const digest = createHash("sha256")
-      .update(`${space.id}:${message.id}`)
-      .digest("hex");
-    if (seen.has(digest)) return;
-    if (seen.size >= 1000) seen.delete(seen.keys().next().value!);
-    seen.set(digest, now);
-    try {
-      await space.send(
-        text(
-          content.type === "text" ? ONLINE : "I can only read text right now.",
-        ),
-      );
-      replyAccepted();
-    } catch {
-      seen.delete(digest);
-      sendFailed();
-    }
-  };
-}
 
 async function readBody(request: IncomingMessage) {
   const chunks: Buffer[] = [];
@@ -81,7 +44,7 @@ async function readBody(request: IncomingMessage) {
 export function bridgeServer(state: {
   status: () => BridgeStatus;
   sdk: () => WebhookTransport | undefined;
-  onMessage: ReturnType<typeof echoHandler>;
+  onMessage: (space: BridgeSpace, message: BridgeMessage) => Promise<void>;
   diagnostics?: () => Record<string, string | number>;
 }) {
   return createServer(async (request, response) => {
@@ -96,7 +59,7 @@ export function bridgeServer(state: {
       response.end(
         JSON.stringify({
           status: state.status(),
-          mode: "echo",
+          mode: "forecast",
           webhook: "/webhook",
           ...state.diagnostics?.(),
         }),
