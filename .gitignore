@@ -26,3 +26,4 @@ logs/
 .worktrees/
 api/store/chloroplasts/*.json
 !api/store/chloroplasts/demo*.json
+api/store/reef.jsonl

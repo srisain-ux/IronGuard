@@ -8,7 +8,9 @@
       "minLength": 1,
       "maxLength": 400,
       "pattern": "\\S"
-    }
+    },
+    "n_pos": {"type": "integer", "minimum": 10, "maximum": 300, "default": 120},
+    "n_neg": {"type": "integer", "minimum": 10, "maximum": 300, "default": 120}
   },
   "required": [
     "alert"
