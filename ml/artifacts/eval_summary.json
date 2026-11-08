@@ -1,0 +1,172 @@
+{
+  "available": false,
+  "display": "--",
+  "generated_at": "2026-11-08T08:04:03.100060+00:00",
+  "dataset": {
+    "version": "seed-smoke",
+    "n_conversations": 30,
+    "n_test": 4,
+    "n_test_human": 0,
+    "split_seed": 0,
+    "split_counts": {
+      "train": 20,
+      "val": 6,
+      "test": 4,
+      "test_human": 0
+    },
+    "split_denominators": {
+      "train": {
+        "scam": 12,
+        "benign": 8,
+        "hard_negative": 4
+      },
+      "val": {
+        "scam": 4,
+        "benign": 2,
+        "hard_negative": 1
+      },
+      "test": {
+        "scam": 2,
+        "benign": 2,
+        "hard_negative": 1
+      },
+      "test_human": {
+        "scam": 0,
+        "benign": 0,
+        "hard_negative": 0
+      }
+    },
+    "n_dropped_near_duplicates": 0,
+    "notes": [
+      "Null metrics have no eligible conversations.",
+      "Strike recall uses prefix <= strike_turn literally (MODEL_SPEC \u00a76.2).",
+      "Thresholds cap empirical benign VAL conversation FPR at 1%.",
+      "PreyNet, zero-day and calibration have not been evaluated.",
+      "abstains=true means the VAL FPR cap required a threshold above 1."
+    ]
+  },
+  "models": {
+    "B0": {
+      "ewr_at_k": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "lead_time": 0.0,
+      "strike_recall": 0.0,
+      "hard_neg_fpr": 0.0,
+      "threshold": 5e-324,
+      "val_fpr": 0.0,
+      "abstains": false,
+      "test_human": {
+        "ewr_at_k": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "lead_time": null,
+        "strike_recall": null,
+        "hard_neg_fpr": null
+      }
+    },
+    "B1": {
+      "ewr_at_k": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.5,
+        0.5
+      ],
+      "lead_time": 1.0,
+      "strike_recall": 0.5,
+      "hard_neg_fpr": 1.0,
+      "threshold": 0.6739470148516477,
+      "val_fpr": 0.0,
+      "abstains": false,
+      "test_human": {
+        "ewr_at_k": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "lead_time": null,
+        "strike_recall": null,
+        "hard_neg_fpr": null
+      }
+    },
+    "B2": {
+      "ewr_at_k": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "lead_time": 5.5,
+      "strike_recall": 1.0,
+      "hard_neg_fpr": 1.0,
+      "threshold": 0.6603693962097169,
+      "val_fpr": 0.0,
+      "abstains": false,
+      "test_human": {
+        "ewr_at_k": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "lead_time": null,
+        "strike_recall": null,
+        "hard_neg_fpr": null
+      }
+    },
+    "B3": {
+      "ewr_at_k": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "lead_time": 5.5,
+      "strike_recall": 1.0,
+      "hard_neg_fpr": 1.0,
+      "threshold": 0.6228538647849449,
+      "val_fpr": 0.0,
+      "abstains": false,
+      "test_human": {
+        "ewr_at_k": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "lead_time": null,
+        "strike_recall": null,
+        "hard_neg_fpr": null
+      }
+    }
+  },
+  "zero_day": null,
+  "reliability": {
+    "bins": [],
+    "acc": [],
+    "conf": []
+  }
+}
