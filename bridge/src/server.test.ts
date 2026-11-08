@@ -45,7 +45,6 @@ test("SDK signature validation, prompt acknowledgment and body bounds", async (t
   assert.deepEqual(await (await fetch(`${url}/health`)).json(), { status: "ready", mode: "forecast", webhook: "/webhook" });
   assert.equal((await fetch(`${url}/elsewhere`)).status, 404);
 });
-
 test("missing configuration returns 503 without accepting messages", async (t) => {
   const server = bridgeServer({ status: () => "needs_webhook_secret", sdk: () => undefined, onMessage: async () => {} });
   server.listen(0, "127.0.0.1");
