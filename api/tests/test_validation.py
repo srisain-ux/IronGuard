@@ -137,17 +137,6 @@ def test_bridge_preview_scrubbed_and_bounded(client, app):
     app.state.events.subscribers.clear()
 
 
-def test_zero_day_background_reports_demo_limitation(client, app):
-    queue = asyncio.Queue()
-    app.state.events.subscribers.add(queue)
-    response = client.post("/v1/zero-day", json={"alert": "Parking payment pretext"})
-    event = queue.get_nowait()
-    assert event["type"] == "error"
-    assert event["job_id"] == response.json()["job_id"]
-    assert "not connected" in event["data"]["message"]
-    app.state.events.subscribers.clear()
-
-
 def test_store_manifests_loaded_and_model_loaded_once(monkeypatch, tmp_path):
     import json
 

@@ -37,7 +37,10 @@ def create_app(*, artifacts: Path | None = None, store: Path | None = None):
         app.state.events = EventBus()
         app.state.reef = deque(maxlen=1000)
         app.state.chloroplasts = {}
+        app.state.jobs = set()
         directory = store or ROOT / "api" / "store" / "chloroplasts"
+        app.state.chloroplast_dir = directory
+        app.state.reef_path = directory.parent / "reef.jsonl"
         for path in sorted(directory.glob("*.json")):
             manifest = validate("chloroplast", json.loads(path.read_text()), status=500)
             app.state.chloroplasts[manifest["id"]] = manifest
