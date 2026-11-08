@@ -74,13 +74,14 @@ test("SDK signature validation: valid, tampered, stale, missing; server bounds b
 });
 test("echo deduplicates inbound deliveries, ignores outbound/emoji, handles unsupported content", async () => {
   const sent: unknown[] = [];
+  const accepted: string[] = [];
   const space = {
     id: "chat-a",
     send: async (input: ReturnType<typeof text>) => {
       sent.push(await input.build());
     },
   } as unknown as Space;
-  const handler = echoHandler();
+  const handler = echoHandler(undefined, undefined, message => accepted.push(message.id));
   const message = {
     id: "1",
     direction: "inbound",
@@ -89,6 +90,7 @@ test("echo deduplicates inbound deliveries, ignores outbound/emoji, handles unsu
   await handler(space, message);
   await handler(space, message);
   assert.deepEqual(sent, [await text(ONLINE).build()]);
+  assert.deepEqual(accepted, ["1"]);
   await handler(space, { ...message, id: "2", direction: "outbound" });
   await handler(space, {
     ...message,
@@ -105,6 +107,7 @@ test("echo deduplicates inbound deliveries, ignores outbound/emoji, handles unsu
     sent[1],
     await text("I can only read text right now.").build(),
   );
+  assert.deepEqual(accepted, ["1", "4"]);
 });
 test("failed send permits a retry without leaking raw errors", async () => {
   let tries = 0,

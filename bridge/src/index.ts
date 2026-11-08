@@ -20,6 +20,18 @@ let status: BridgeStatus =
 let sdk: WebhookTransport | undefined;
 const api = projectId?.startsWith("pho_prj_") ? "photon-beta" : "spectrum";
 const counts = { received_events: 0, replies_accepted: 0, reply_failures: 0 };
+function publishMaskedPreview(message: { content: { type: string; text?: string } }) {
+  if (process.env.MOCK_API === "1" || message.content.type !== "text") return;
+  const preview = message.content.text?.replace(/https?:\/\/\S+|www\.\S+|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|\b(?:[\w-]+\.)+[A-Za-z]{2,}(?:\/\S*)?|\+?\d[\d ()-]{5,}\d/gi, "[masked]").slice(0, 60);
+  if (!preview) return;
+  const base = process.env.IRONGUARD_API_URL || "http://localhost:8000";
+  void fetch(`${base}/v1/events/publish`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ type: "photon.message", ts: new Date().toISOString(), data: { preview } }),
+    signal: AbortSignal.timeout(3_000),
+  }).catch(() => { /* Reef feed is optional; Photon reply must continue. */ });
+}
 const echo = echoHandler(
   () => {
     counts.reply_failures++;
@@ -31,6 +43,7 @@ const echo = echoHandler(
     counts.replies_accepted++;
     console.info("Photon reply accepted for delivery.");
   },
+  publishMaskedPreview,
 );
 const server = bridgeServer({
   status: () => status,
