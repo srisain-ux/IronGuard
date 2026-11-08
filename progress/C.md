@@ -5,8 +5,8 @@
 
 ## Now
 - Phase: P1
-- Working on: `/phone` mock demo and Photon echo shipped on `c/phone-hud`; web, bridge and tunnel running for the user's phone test.
-- Blocked by: Only receipt on the physical phone remains unverified. Photon Beta destination/secret are configured and public health/signature checks pass.
+- Working on: P1 complete: `/phone` mock demo shipped and real Photon echo confirmed on the user's phone. Web, bridge and tunnel remain running for the demo.
+- Blocked by: None for P1. Real model inference and forecast replies remain later integration work.
 
 ## Log
 - 
@@ -30,3 +30,4 @@
 - [02:19][P1] Registered the existing project's destination through the Beta API (201), subscribed to `message.received`, payload version `2026-07-01`; saved the returned secret directly into this worktree's ignored `bridge/.env` with mode 0600, never displayed it. No line purchase/assignment or credential rotation. Destination `pho_whd_01m6x3ntgjfk08a15rp3padw4m`; URL `https://hub-initiated-beautifully-ips.trycloudflare.com/webhook`. Public `/health` reports ready; signed no-op request returns 204, invalid signature returns 401; API confirms enabled destination. No real customer text used in smoke checks.
 - [02:19][P1] Validation: `make validate check-web check-bridge`, all 8 bridge tests (4 Beta, 4 Spectrum/server), staged whitespace and ownership guard passed. Direct correctness/privacy/contract and bloat review completed; Ponytail/ECC skill availability remains as recorded above. Tests cover tampering, timestamp freshness/rotation, project/channel/identity checks, stable send IDs, duplicate delivery and safe send failures. Only C-owned paths touched. | skipped: physical device actions, inaccessible review skills, full model/API integration | unverified: phone receipt. At the last health check no phone event had arrived yet. User instructed to send `test` as blue-bubble iMessage to the already assigned Photon number. Do not claim the physical round trip succeeded until confirmed.
 - [02:19][P1] Handoff: `betaTransport` in `bridge/src/beta.ts`; `WebhookTransport`, `EchoSpace`, `EchoMessage` in `bridge/src/server.ts`; existing `PHOTON_PROJECT_ID`, `PHOTON_SECRET` (Beta API key), `PHOTON_WEBHOOK_SECRET` (destination secret). Retained exec sessions: bridge 97473, tunnel 24435; these are intentionally left running at the user's request. Mock web restarted on 5173. A tunnel restart changes its URL; re-register with a stable idempotency key and save the new signing secret before restarting bridge. Root checkout's ignored `.env` was not modified.
+- [02:21][P1] User confirmed receiving the real IronGuard online reply on their phone. Local health independently shows ready, 1 received event, 1 accepted reply, 0 reply failures. The physical phone → Photon Beta webhook → local bridge → Photon send API → phone round trip is now verified. | skipped: no further code changes or messages sent | unverified: real model scoring and Safeguard forecast replies (outside this echo step). Services deliberately remain running for the demo.
