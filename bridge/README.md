@@ -19,6 +19,18 @@ If `bridge/.env` does not exist, copy the root `.env.example` into it and fill `
 - If the webhook returned `200` but no reply arrived, check the bridge for the safe **Photon reply failed** message and check the project's channel/number status. Send a fresh text after fixing it. Outbound events and duplicate delivery IDs are ignored to prevent loops.
 - Share only the status code and safe bridge status when asking for help. Keep secrets, phone numbers, message bodies and raw payloads private.
 
-The SDK is pinned to `spectrum-ts@12.15.0`. Native Photon/Spectrum JSON signatures and timestamp freshness are checked by its webhook implementation. The bridge acknowledges before sending, limits inbound bodies, disables SDK telemetry/logging, and retains only bounded delivery hashes in memory. No streaming subscription is opened, so one inbound event has one delivery path.
+The SDK is pinned to `spectrum-ts@12.15.0`. Native Spectrum JSON signatures and timestamp freshness are checked by its webhook implementation. The bridge acknowledges before sending, limits inbound bodies, disables SDK telemetry/logging, and retains only bounded delivery hashes in memory. No streaming subscription is opened, so one inbound event has one delivery path.
+
+## Photon Beta (2.0) projects
+
+Projects beginning `pho_prj_` use the newer Photon API, not the Spectrum SDK. Keep the project API key in the existing `PHOTON_SECRET` setting. The bridge selects the compatible transport automatically; it adds no dependencies. It uses [Photon Beta webhook documentation](https://photon.codes/docs/beta/message-delivery/webhook), payload version `2026-07-01`, Standard Webhooks signatures, and the HTTPS messaging API at `https://api.photon.codes/v1`.
+
+The project must already have an assigned iMessage line. Test from the sender identity assigned to that line, using a blue iMessage bubble. The API key needs project read/write access and permission to manage webhook destinations for automated registration. Do not buy or assign a new line merely to start this bridge.
+
+In the [Beta dashboard](https://app.beta.photon.codes), create a webhook destination for `<tunnel-url>/webhook`, version `2026-07-01`, subscribed to `message.received`. Save its `whsec_…` signing secret as `PHOTON_WEBHOOK_SECRET` and restart the bridge. For API automation, create it with `POST /v1/projects/{projectId}/webhooks/destinations`, Bearer auth, and a stable `Idempotency-Key`; save the returned secret directly to ignored `bridge/.env`. Retrying the same logical creation with the same key can recover the one-time response without duplicating the destination.
+
+The Beta transport verifies the original body and all three `webhook-*` headers, checks the event/project/channel and human-to-agent direct conversation, then queues an echo through the message API. It replies using the incoming Space ID and receiving agent's User ID. The reply's idempotency key derives from the incoming Message ID, so retries across restarts reuse the same send. API acceptance means queued delivery; the message arriving on the phone confirms the round trip.
+
+`/health` includes only safe diagnostics: API type, received-event count, accepted-reply count and failed-reply count. No phone number or message text appears there. A restarted quick tunnel has a new URL and needs a new destination/secret; leave the active tunnel running during the demo. Beta uses different signature headers from Spectrum, so the two versions cannot share signing secrets.
 
 Checks: `make check-bridge` and `pnpm --dir bridge test`.

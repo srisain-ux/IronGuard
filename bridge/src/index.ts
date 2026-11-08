@@ -1,6 +1,12 @@
-import { Spectrum, type SpectrumInstance } from "spectrum-ts";
+import { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
-import { bridgeServer, echoHandler, type BridgeStatus } from "./server.js";
+import {
+  bridgeServer,
+  echoHandler,
+  type BridgeStatus,
+  type WebhookTransport,
+} from "./server.js";
+import { betaTransport } from "./beta.js";
 
 const projectId = process.env.PHOTON_PROJECT_ID?.trim();
 const projectSecret = process.env.PHOTON_SECRET?.trim();
@@ -11,15 +17,29 @@ let status: BridgeStatus =
     : !webhookSecret
       ? "needs_webhook_secret"
       : "connecting";
-let sdk: SpectrumInstance | undefined;
+let sdk: WebhookTransport | undefined;
+const api = projectId?.startsWith("pho_prj_") ? "photon-beta" : "spectrum";
+const counts = { received_events: 0, replies_accepted: 0, reply_failures: 0 };
+const echo = echoHandler(
+  () => {
+    counts.reply_failures++;
+    console.error(
+      "Photon reply failed. Check API key permissions and the project's channel status.",
+    );
+  },
+  () => {
+    counts.replies_accepted++;
+    console.info("Photon reply accepted for delivery.");
+  },
+);
 const server = bridgeServer({
   status: () => status,
   sdk: () => sdk,
-  onMessage: echoHandler(() =>
-    console.error(
-      "Photon reply failed. Check project/channel status in the dashboard, then send a fresh test text.",
-    ),
-  ),
+  onMessage: async (space, message) => {
+    counts.received_events++;
+    await echo(space, message);
+  },
+  diagnostics: () => ({ api, ...counts }),
 });
 server.requestTimeout = 10_000;
 server.on("error", () => {
@@ -43,15 +63,30 @@ server.listen(8787, "127.0.0.1", () => {
 });
 if (status === "connecting") {
   try {
-    sdk = await Spectrum({
-      projectId: projectId!,
-      projectSecret: projectSecret!,
-      webhookSecret,
-      providers: [imessage.config()],
-      telemetry: false,
-      options: { logLevel: "silent" },
-      signal: AbortSignal.timeout(15_000),
-    });
+    if (api === "photon-beta") {
+      const response = await fetch(
+        `https://api.photon.codes/v1/projects/${encodeURIComponent(projectId!)}`,
+        {
+          headers: { Authorization: `Bearer ${projectSecret}` },
+          signal: AbortSignal.timeout(15_000),
+        },
+      );
+      if (!response.ok) throw new Error("Photon credentials rejected.");
+      sdk = betaTransport({
+        projectId: projectId!,
+        apiKey: projectSecret!,
+        signingSecret: webhookSecret!,
+      });
+    } else
+      sdk = await Spectrum({
+        projectId: projectId!,
+        projectSecret: projectSecret!,
+        webhookSecret,
+        providers: [imessage.config()],
+        telemetry: false,
+        options: { logLevel: "silent" },
+        signal: AbortSignal.timeout(15_000),
+      });
     status = "ready";
     console.info(
       "Photon ready. Text the Photon number from your phone. Expected reply: IronGuard online 🛡",
@@ -66,6 +101,6 @@ if (status === "connecting") {
 for (const signal of ["SIGINT", "SIGTERM"] as const)
   process.on(signal, () => {
     server.close();
-    void sdk?.stop().finally(() => process.exit(0));
-    if (!sdk) process.exit(0);
+    if (sdk?.stop) void sdk.stop().finally(() => process.exit(0));
+    else process.exit(0);
   });
