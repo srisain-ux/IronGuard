@@ -10,7 +10,6 @@ the negative conversations. `python -m ironguard_ml.chloroplast` prints a timing
 import argparse
 import base64
 import hashlib
-import json
 import logging
 import math
 import re
@@ -27,7 +26,7 @@ from sklearn.metrics import roc_auc_score
 from torch import nn
 from torch.nn import functional as F
 
-from ironguard_ml.data import DATA_DIR, ROOT, Conversation, _parse
+from ironguard_ml.data import DATA_DIR, ROOT, Conversation, _parse, read_records
 from ironguard_ml.features import (
     CACHE_DIR,
     Encoder,
@@ -185,7 +184,7 @@ def _fit(pos: np.ndarray, neg: np.ndarray, seed: int, progress_cb: ProgressCb | 
         loss.backward()
         opt.step()
         if progress_cb is not None and (step % PROGRESS_EVERY == 0 or step == STEPS):
-            progress_cb(step, STEPS, float(loss))
+            progress_cb(step, STEPS, loss.item())
     return head.eval()
 
 
@@ -242,20 +241,14 @@ def train(pos, neg, family_id, label, alert, progress_cb: ProgressCb | None = No
     }
 
 
-def _read_jsonl(path: Path, keep, limit: int) -> list[dict]:
-    # split("\n") like data.load_jsonl: splitlines() would also split on U+2028 inside JSON strings
-    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").split("\n") if line.strip()]
-    return [r for r in rows if keep(r)][:limit]
-
-
 def main():
     """Timing benchmark on v1 data with the shipped artifacts and real MiniLM (no disk cache)."""
     parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument("--n", type=int, default=120, help="positives and hard negatives each")
     args = parser.parse_args()
-    v1 = DATA_DIR / "generated" / "v1"
-    pos = _read_jsonl(v1 / "job_task.jsonl", lambda r: True, args.n)
-    neg = _read_jsonl(v1 / "benign.jsonl", lambda r: r.get("hard_negative"), args.n)
+    records = read_records(DATA_DIR / "generated" / "v1")
+    pos = [r for r in records if r["family"] == "job_task"][:args.n]
+    neg = [r for r in records if r.get("hard_negative")][:args.n]
     load_base()
     minilm_encoder()  # model load is a one-time server start-up cost, not per-chloroplast
     logging.basicConfig(level=logging.INFO, format="%(message)s")

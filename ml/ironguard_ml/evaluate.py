@@ -17,7 +17,7 @@ import torch
 
 from ironguard_ml.baselines import Baseline
 from ironguard_ml.calibrate import ece, reliability, top_label
-from ironguard_ml.data import DATA_DIR, ROOT
+from ironguard_ml.data import DATA_DIR, ROOT, read_records
 from ironguard_ml.features import turn_vectors
 from ironguard_ml.infer import lock_states
 from ironguard_ml.metrics import (
@@ -44,7 +44,7 @@ from ironguard_ml.train import (
     scored,
     temperatures,
 )
-from ironguard_ml.zero_day import read_records, run_lofo
+from ironguard_ml.zero_day import run_lofo
 
 NATIVE_THRESHOLD = 0.5  # B0 emits 0/1 rule hits
 AVERAGED = ("lead_time", "strike_recall", "hard_neg_fpr", "fpr", "ece_before", "ece_after",

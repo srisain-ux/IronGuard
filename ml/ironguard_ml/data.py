@@ -117,6 +117,13 @@ def load_jsonl(path: Path) -> list[Conversation]:
     return convs
 
 
+def read_records(directory: Path) -> list[dict]:
+    """Raw dicts from every *.jsonl in a directory, unvalidated (for code that needs the records)."""
+    # split("\n"), not splitlines(): U+2028 etc. are legal inside JSON strings
+    return [json.loads(line) for path in sorted(directory.glob("*.jsonl"))
+            for line in path.read_text(encoding="utf-8").split("\n") if line.strip()]
+
+
 def _load_dir(directory: Path) -> list[Conversation]:
     return [c for p in sorted(directory.glob("*.jsonl")) for c in load_jsonl(p)]
 

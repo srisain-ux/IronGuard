@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from ironguard_ml.data import _parse
+from ironguard_ml.data import DATA_DIR, _parse, prepare_splits, read_records
 from ironguard_ml.zero_day import ZD_FAMILY, run_lofo, synthetic_data
 from tests.test_chloroplast import fake_encoder, record
 
@@ -91,3 +91,10 @@ def test_summary_shape(lofo_runs):
     assert all(p["ewr_at_3"] is None for p in z["sample_efficiency"])  # only 8 positives
     assert len(z["base"]["ewr_at_k"]) == len(z["chloroplast"]["ewr_at_k"]) == 6
     assert z["time_to_protection_s"] is None and len(z["seeds"]) == 3
+
+
+def test_seed_fixture_skips_lofo_without_crashing(tmp_path):
+    # `make eval` falls back to data/seed when v1 is missing; its 3 job_task rows are too few
+    splits, _ = prepare_splits(None, lambda c: fake_encoder([t.text for t in c.turns]).mean(axis=0))
+    records = {r["id"]: r for r in read_records(DATA_DIR / "seed")}
+    assert run_lofo(splits, records, encoder=fake_encoder, zd_dir=tmp_path / "absent") is None
