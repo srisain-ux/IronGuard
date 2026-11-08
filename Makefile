@@ -2,7 +2,10 @@
 # Targets for code that doesn't exist yet are part of the plan; each owner makes theirs work in P0.
 SHELL := /bin/bash
 UV := $(shell command -v uv 2>/dev/null || echo $(HOME)/.local/bin/uv)
-.PHONY: sync validate check-ml check-api check-web check-bridge smoke api api-stub web bridge tunnel train eval export setup-a setup-b setup-c
+.PHONY: doctor algae sync validate check-ml check-api check-web check-bridge smoke api api-stub web bridge tunnel train eval export setup-a setup-b setup-c
+
+doctor:              ## is THIS laptop ready? prints ✅/❌ with fixes
+	@./scripts/doctor.sh
 
 validate:            ## contracts + taxonomy + examples
 	$(UV) run --quiet --with jsonschema python scripts/validate_contracts.py
@@ -12,12 +15,12 @@ validate-data:       ## validate every generated dataset file against conversati
 
 # ---------- per-area checks (each owner keeps theirs green) ----------
 check-ml:
-	cd ml && uv run ruff check . && uv run pytest -q
+	cd ml && $(UV) run ruff check . && $(UV) run pytest -q
 check-api:
 	python3 scripts/run_api.py ruff check .
 	python3 scripts/run_api.py pytest -q
 check-web:
-	cd web && pnpm -s tsc --noEmit && pnpm -s lint
+	cd web && pnpm -s tsc --noEmit && pnpm -s run --if-present lint
 check-bridge:
 	cd bridge && pnpm -s tsc --noEmit
 
@@ -45,6 +48,10 @@ smoke:               ## must pass before every PR and at every merge window
 	@if [ -f web/package.json ]; then cd web && pnpm -s tsc --noEmit; else echo "web typecheck pending: member C package not present"; fi
 	@if [ -f bridge/package.json ]; then cd bridge && pnpm -s tsc --noEmit; else echo "bridge typecheck pending: member C package not present"; fi
 
+# ---------- Nemotron data (B only; reads NVIDIA_API_KEY from api/.env) ----------
+algae:
+	python3 scripts/run_api.py python -m ironguard_api.agent.algae --version v1 --per-family 150
+
 # ---------- ML (A only) ----------
 train:
 	cd ml && uv run python -m ironguard_ml.train --data ../data/generated/v1 --out artifacts
@@ -57,6 +64,6 @@ export:
 setup-a:
 	./scripts/install-hooks.sh A && cd ml && uv sync
 setup-b:
-	./scripts/install-hooks.sh B && cd api && uv sync
+	./scripts/install-hooks.sh B && python3 scripts/run_api.py python -c "print('api deps ready')"
 setup-c:
 	./scripts/install-hooks.sh C && cd web && pnpm install && cd ../bridge && pnpm install

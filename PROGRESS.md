@@ -6,16 +6,16 @@
 
 | Gate | Hour | Clock | Status |
 |---|---|---|---|
-| M0: skeleton + frozen contracts | H1:00 | `__:__` | ⬜ |
-| Devpost placeholder submitted (title, team, tracks) | before **11:00 PM** | `__:__` | ⬜ |
-| M1: data v1 + baselines + UI shell + Photon echo | H4:00 | `__:__` | ⬜ |
-| M2: end-to-end forward → forecast → safety card | H7:00 | `__:__` | ⬜ |
-| M3: live zero-day chloroplast + on-device inference | H9:30 | `__:__` | ⬜ |
-| FREEZE: features frozen; fixes only | H10:00 | `__:__` | ⬜ |
-| M4: final merge, video recorded, Devpost complete | H11:00 | `__:__` | ⬜ |
-| SUBMIT: final Devpost (hard deadline **12:00 PM**) | H11:30 | `__:__` | ⬜ |
+| M0: skeleton + frozen contracts | H1:00 | `00:45` | ✅ (A0/C0 code merges at M1) |
+| Devpost placeholder (skipped by team decision; final entry only) | — | — | ➖ |
+| M1: data v1 + baselines + UI shell + Photon echo | target | `03:45` | ⬜ |
+| M2: end-to-end forward → forecast → safety card | target | `06:30` | ⬜ |
+| M3: live zero-day chloroplast + on-device inference | target | `09:00` | ⬜ |
+| FREEZE: features frozen; fixes only | target | `09:00` | ⬜ |
+| M4: final merge, tag v1.0-hackutd | target | `10:30` | ⬜ |
+| SUBMIT: final Devpost (hard deadline **12:00 PM**) | target | `11:30` | ⬜ |
 
-**Current phase:** `P0`
+**Current phase:** `P1` (Step 1 in docs/PROMPTS.md)
 
 ---
 

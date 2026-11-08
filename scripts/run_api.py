@@ -13,6 +13,8 @@ import tomllib  # noqa: E402
 
 project = tomllib.loads((ROOT / "api/pyproject.toml").read_text())
 command = [uv, "run", "--python", "3.11"]
+if (ROOT / "api/.env").is_file():  # NVIDIA_API_KEY etc. live here (gitignored)
+    command += ["--env-file", str(ROOT / "api/.env")]
 if not (ROOT / "ml/pyproject.toml").is_file():
     print("ML package pending: installing API dependencies only; stub uses contract fixtures.", flush=True)
     command += ["--no-project"]
