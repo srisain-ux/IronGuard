@@ -49,6 +49,7 @@ def lock_states(risks: Sequence[float], senders: Sequence[str], theta_lock: floa
                 theta_release: float = THETA_RELEASE, release_turns: int = RELEASE_TURNS) -> list[bool]:
     """CSTMD1 lock-on per prefix: lock at risk >= θ_lock; release only after `release_turns`
     consecutive scammer ("them") turns below θ_release. "me" turns never move the counter."""
+    theta_release = min(theta_release, theta_lock)
     locked, below, states = False, 0, []
     for risk, sender in zip(risks, senders, strict=True):
         if not locked:
@@ -117,6 +118,8 @@ class Model:
     def __init__(self, net: PreyNet, temperatures: dict, encoder: Encoder, version: str):
         self.net = net.eval()
         self.temperatures = temperatures
+        # θ_lock tuned on VAL (§4.6) = the 1%-FPR operating point the reported metrics use.
+        self.theta_lock = float(temperatures.get("theta_lock", THETA_LOCK))
         self.encoder = encoder
         self.version = version
 
@@ -156,7 +159,7 @@ class Model:
             "family_probs": base_probs,
             "next_stage": {"stage": STAGES[int(stage.argmax())], "p": float(stage.max())},
             "turns_to_strike": {"bucket": TTS_BUCKETS[int(tts.argmax())], "p": float(tts.max())},
-            "locked": lock_states(risks, [t.sender for t in parsed])[-1],
+            "locked": lock_states(risks, [t.sender for t in parsed], self.theta_lock)[-1],
             "attention": attention,
             "evidence": evidence(parsed, attention),
             "chloroplast_hits": hits,
@@ -177,6 +180,6 @@ def load(artifacts_dir, encoder: Encoder | None = None) -> Model:
     net = PreyNet(**checkpoint["config"])
     net.load_state_dict(checkpoint["state_dict"])
     temperatures = json.loads(temps.read_text())
-    if set(temperatures) != {"family", "next_stage", "tts"}:
+    if not {"family", "next_stage", "tts"} <= set(temperatures):
         raise ValueError(f"{temps} must have family, next_stage and tts temperatures")
     return Model(net, temperatures, encoder or minilm_encoder(), checkpoint["meta"]["version"])

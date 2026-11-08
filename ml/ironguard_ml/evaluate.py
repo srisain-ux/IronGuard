@@ -7,6 +7,7 @@ Missing metrics are null; zero-day (LOFO) results are not produced here yet.
 
 import argparse
 import json
+import math
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -16,9 +17,9 @@ import torch
 
 from ironguard_ml.baselines import Baseline
 from ironguard_ml.calibrate import ece, reliability, top_label
-from ironguard_ml.data import DATA_DIR, ROOT
+from ironguard_ml.data import DATA_DIR, FAMILIES, ROOT
 from ironguard_ml.features import turn_vectors
-from ironguard_ml.infer import THETA_LOCK, lock_states
+from ironguard_ml.infer import lock_states
 from ironguard_ml.metrics import (
     ScoredConversation,
     benign_fpr,
@@ -32,6 +33,7 @@ from ironguard_ml.train import (
     FitResult,
     PrefixData,
     best_of,
+    calibrated_val_rows,
     encode,
     fit,
     load_splits,
@@ -42,8 +44,10 @@ from ironguard_ml.train import (
     temperatures,
 )
 
-AVERAGED = ("lead_time", "strike_recall", "hard_neg_fpr", "ece_before", "ece_after",
-            "flicker_rate", "flicker_rate_no_lock")
+NATIVE_THRESHOLD = 0.5  # B0 emits 0/1 rule hits
+BENIGN = FAMILIES.index("benign")
+AVERAGED = ("lead_time", "strike_recall", "hard_neg_fpr", "fpr", "ece_before", "ece_after",
+            "ece_risk_before", "ece_risk_after", "flicker_rate", "flicker_rate_no_lock")
 
 
 def score(model, conversations):
@@ -58,14 +62,14 @@ def _mean(values) -> float | None:
 def _run(result: FitResult, data: dict[str, PrefixData]) -> dict:
     """Calibrate and threshold on VAL, then report one seed on TEST and test_human."""
     temp = temperatures(result.net, data["val"])["family"]
-    val_rows = scored(data["val"].conversations,
-                      risks(predict(result.net, data["val"])["family_logits"], temp))
-    threshold = threshold_at_fpr(val_rows)
+    val_rows = calibrated_val_rows(result.net, data["val"], temp)
+    threshold = threshold_at_fpr(val_rows)  # also θ_lock, as in `make train`
     test = data["test"]
     logits = predict(result.net, test)["family_logits"]
     test_risk = risks(logits, temp)
     before = top_label(torch.softmax(logits, 1).numpy(), test.family.numpy())
     after = top_label(torch.softmax(logits / temp, 1).numpy(), test.family.numpy())
+    is_scam = (test.family != BENIGN).numpy()
     convs = per_conversation(test.conversations, test_risk)
     human = data.get("test_human")
     human_rows = (scored(human.conversations,
@@ -76,9 +80,11 @@ def _run(result: FitResult, data: dict[str, PrefixData]) -> dict:
         "val_fpr": benign_fpr(val_rows, threshold),
         "ece_before": ece(*before),
         "ece_after": ece(*after),
-        "flicker_rate": flicker_rate([lock_states(r.tolist(), [t.sender for t in c.turns])
+        "ece_risk_before": ece(risks(logits), is_scam),
+        "ece_risk_after": ece(test_risk, is_scam),
+        "flicker_rate": flicker_rate([lock_states(r.tolist(), [t.sender for t in c.turns], threshold)
                                       for c, r in zip(test.conversations, convs, strict=True)]),
-        "flicker_rate_no_lock": flicker_rate([(r >= THETA_LOCK).tolist() for r in convs]),
+        "flicker_rate_no_lock": flicker_rate([(r >= threshold).tolist() for r in convs]),
         "test_human": summarize(human_rows, threshold),
         "reliability": reliability(*after),
     }
@@ -94,7 +100,7 @@ def _aggregate(fits: list[FitResult], runs: list[dict]) -> dict:
         "test_human": {
             "ewr_at_k": [_mean([r["test_human"]["ewr_at_k"][i] for r in runs]) for i in range(6)],
             **{key: _mean([r["test_human"][key] for r in runs])
-               for key in ("lead_time", "strike_recall", "hard_neg_fpr")},
+               for key in ("lead_time", "strike_recall", "hard_neg_fpr", "fpr")},
         },
         "seeds": [{"seed": f.seed, "epoch": f.epoch, "val_ewr_at_2": f.val_ewr_at_2,
                    "threshold": r["threshold"], "val_fpr": r["val_fpr"], "lead_time": r["lead_time"]}
@@ -124,13 +130,18 @@ def evaluate(splits: dict, dataset: dict, with_preynet: bool = False,
         model = Baseline(model_id).fit(splits["train"])
         val = score(model, splits["val"])
         threshold = threshold_at_fpr(val)
+        test = score(model, splits["test"])
         models[model_id] = {
-            **summarize(score(model, splits["test"]), threshold),
+            **summarize(test, threshold),
             "threshold": threshold,
             "val_fpr": benign_fpr(val, threshold),
             "abstains": threshold > 1,
             "test_human": summarize(score(model, splits["test_human"]), threshold),
         }
+        if threshold > 1:  # can't meet the 1% cap; also show where it natively operates
+            models[model_id]["native"] = {"threshold": NATIVE_THRESHOLD,
+                                          "val_fpr": benign_fpr(val, NATIVE_THRESHOLD),
+                                          **summarize(test, NATIVE_THRESHOLD)}
     reliability_bins = {"bins": [], "acc": [], "conf": []}
     if with_preynet:
         preynet_models, reliability_bins = evaluate_preynet(splits, vectors)
@@ -161,6 +172,7 @@ def main():
         splits, dropped, version = load_splits(data)
     except ValueError as exc:
         parser.error(str(exc))
+    dataset_benign_val = sum(c.family == "benign" for c in splits["val"])
     dataset = {
         "version": version or "seed-smoke",
         "n_conversations": sum(len(splits[s]) for s in ("train", "val", "test")),
@@ -178,10 +190,21 @@ def main():
                   "abstains=true means the VAL FPR cap required a threshold above 1.",
                   "PreyNet entries are means over seeds 0/1/2; lead_time_std is the sample std.",
                   "PreyNet temperatures, thresholds and early stopping use VAL only.",
+                  (f"VAL has {dataset_benign_val} benign conversations, so the 1% cap allows "
+                   f"{math.floor(0.01 * dataset_benign_val)} VAL false alarms; "
+                   "fpr is the resulting TEST benign FPR."),
+                  ("native: for models that abstain at the 1% cap, metrics at their own "
+                   "operating point (with its FPR)."),
+                  ("ece_risk_*: calibration of risk = 1 - P(benign) against is-scam per TEST "
+                   "prefix (the number the UI shows)."),
+                  ("theta_lock = each seed's VAL 1%-FPR threshold (§4.6 tuned on VAL), so "
+                   "flicker is measured at the reported operating point."),
+                  ("Shipped PreyNet trains on all six scam families including job_task; the "
+                   "zero-day LOFO experiment needs a separate base model (exclude_held_out)."),
                   ("ECE and reliability use the family head's top-label confidence on TEST "
                   "prefixes; reliability is the shipped seed (best VAL EWR@2)."),
                   ("flicker_rate: share of warned TEST conversations whose warning goes off and "
-                  "back on (LockOn 0.70/0.40/2 turns vs risk >= 0.70 without lock-on)."),
+                  "back on (LockOn theta_lock/0.40/2 turns vs risk >= theta_lock without it)."),
                   "Lock-on is inference-only, so PreyNet without lock-on is flicker_rate_no_lock.",
                   "zero_day (LOFO) is not evaluated yet."],
     }

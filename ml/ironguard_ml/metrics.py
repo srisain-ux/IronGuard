@@ -95,4 +95,5 @@ def summarize(rows: Sequence[ScoredConversation], threshold: float) -> dict:
         "lead_time": lead_time(rows, threshold),
         "strike_recall": strike_recall(rows, threshold),
         "hard_neg_fpr": hard_neg_fpr(rows, threshold),
+        "fpr": benign_fpr(rows, threshold),
     }

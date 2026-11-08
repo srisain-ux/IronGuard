@@ -114,3 +114,16 @@ def test_rejects_bad_turns(model, turns):
 def test_missing_artifacts_fail_loudly(tmp_path):
     with pytest.raises(FileNotFoundError, match="make train"):
         load(tmp_path, encoder=fake_encoder)
+
+
+def test_val_tuned_theta_lock_drives_locked(tmp_path):
+    torch.manual_seed(0)
+    net = PreyNet()
+    torch.save({"state_dict": net.state_dict(), "config": net.config,
+                "meta": {"version": "test"}}, tmp_path / "preynet.pt")
+    temps = {"family": 1.0, "next_stage": 1.0, "tts": 1.0}
+    turns = [{"sender": "them", "text": "hi"}]
+    for theta, expected in ((0.0, True), (1.01, False)):
+        (tmp_path / "temperature.json").write_text(json.dumps({**temps, "theta_lock": theta}))
+        assert load(tmp_path, encoder=fake_encoder).score(turns)["locked"] is expected
+    assert lock_states([.3, .1], ["them"] * 2, theta_lock=.2) == [True, True]  # release <= lock
