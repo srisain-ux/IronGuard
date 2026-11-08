@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "zero_day_response.schema.json",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "demo",
+        "queued"
+      ]
+    },
+    "events_url": {
+      "const": "/v1/events"
+    }
+  },
+  "required": [
+    "job_id",
+    "status",
+    "events_url"
+  ],
+  "additionalProperties": false
+}

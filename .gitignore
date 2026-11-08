@@ -21,3 +21,8 @@ dist/
 # never commit raw Photon traffic
 logs/
 *.log
+
+# local agent worktrees and transient API adapter manifests
+.worktrees/
+api/store/chloroplasts/*.json
+!api/store/chloroplasts/demo*.json

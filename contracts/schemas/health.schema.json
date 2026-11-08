@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "health.schema.json",
+  "type": "object",
+  "properties": {
+    "status": {
+      "const": "ok"
+    },
+    "model": {
+      "enum": [
+        "stub",
+        "preynet"
+      ]
+    },
+    "fixture": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "status",
+    "model",
+    "fixture"
+  ],
+  "additionalProperties": false
+}

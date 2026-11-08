@@ -28,6 +28,8 @@ for path in sorted(SCHEMAS.glob("*.schema.json")):
 def check(name, obj, where):
     for err in validators[name].iter_errors(obj):
         errors.append(f"{where}: {'/'.join(map(str, err.path)) or '<root>'}: {err.message}")
+    if not isinstance(obj, dict):
+        return
     fam = obj.get("family")
     fam_id = fam.get("id") if isinstance(fam, dict) else fam
     if fam_id and fam_id not in FAMILIES and not str(fam_id).startswith(ZD):
