@@ -1,6 +1,6 @@
 {
   "available": true,
-  "generated_at": "2026-11-08T11:43:42.697974+00:00",
+  "generated_at": "2026-11-08T11:52:56.789658+00:00",
   "dataset": {
     "version": "v1",
     "n_conversations": 1773,
@@ -393,7 +393,9 @@
     "alert": "Texts offer an easy remote job, then ask you to pay a deposit to unlock higher-paying tasks.",
     "k": 3,
     "base_ewr_at_3": 0.10666666666666667,
-    "chloroplast_ewr_at_3": 0.9555555555555556,
+    "chloroplast_ewr_at_3": 0.8666666666666667,
+    "base_ewr_at_3_std": 0.013333333333333329,
+    "chloroplast_ewr_at_3_std": 0.035276684147527854,
     "base": {
       "ewr_at_k": [
         0.044444444444444446,
@@ -410,15 +412,15 @@
     },
     "chloroplast": {
       "ewr_at_k": [
+        0.791111111111111,
+        0.8088888888888889,
+        0.8666666666666667,
         0.8977777777777778,
-        0.9288888888888889,
-        0.9555555555555556,
-        0.9644444444444445,
-        0.9644444444444445,
-        0.9733333333333333
+        0.9066666666666666,
+        0.9155555555555557
       ],
-      "lead_time": 4.208888888888889,
-      "strike_recall": 0.9733333333333333,
+      "lead_time": 3.857777777777778,
+      "strike_recall": 0.9155555555555557,
       "fpr": null,
       "hard_neg_fpr": null
     },
@@ -440,26 +442,26 @@
       "with_chloroplast": {
         "ewr_at_k": [
           0.44744744744744747,
-          0.5525525525525525,
-          0.6816816816816816,
+          0.5435435435435435,
+          0.6786786786786787,
           0.7417417417417417,
-          0.7537537537537538,
-          0.7597597597597598
+          0.7477477477477478,
+          0.7537537537537538
         ],
-        "lead_time": 2.732732732732733,
-        "strike_recall": 0.7627627627627627,
-        "fpr": 0.03258145363408521,
-        "hard_neg_fpr": 0.06779661016949153
+        "lead_time": 2.702702702702703,
+        "strike_recall": 0.7567567567567567,
+        "fpr": 0.020050125313283207,
+        "hard_neg_fpr": 0.03954802259887005
       }
     },
     "sample_efficiency": [
       {
         "n": 25,
-        "ewr_at_3": 0.8844444444444445
+        "ewr_at_3": 0.8044444444444444
       },
       {
         "n": 50,
-        "ewr_at_3": 0.9422222222222222
+        "ewr_at_3": 0.8711111111111111
       },
       {
         "n": 100,
@@ -476,34 +478,48 @@
     "n_synthetic_pos": 74,
     "n_synthetic_neg": 120,
     "n_test": 75,
+    "n_dropped_near_test": 0,
     "seeds": [
       {
         "seed": 0,
         "theta": 0.972992777824402,
-        "chloroplast_threshold": 0.9886296391487122,
-        "train_seconds": 0.241,
-        "val_recall_at_1fpr": 0.9333333333333333
+        "chloroplast_threshold": 0.994346022605896,
+        "train_seconds": 0.239,
+        "val_recall_at_1fpr": 0.9333333333333333,
+        "base_ewr_at_3": 0.10666666666666667,
+        "chloroplast_ewr_at_3": 0.8533333333333334,
+        "test_fpr": 0.015037593984962405,
+        "test_fpr_with_chloroplast": 0.022556390977443608
       },
       {
         "seed": 1,
         "theta": 0.9692705869674684,
-        "chloroplast_threshold": 0.6223793029785156,
-        "train_seconds": 0.201,
-        "val_recall_at_1fpr": 1.0
+        "chloroplast_threshold": 0.9990520477294922,
+        "train_seconds": 0.204,
+        "val_recall_at_1fpr": 1.0,
+        "base_ewr_at_3": 0.12,
+        "chloroplast_ewr_at_3": 0.84,
+        "test_fpr": 0.022556390977443608,
+        "test_fpr_with_chloroplast": 0.022556390977443608
       },
       {
         "seed": 2,
         "theta": 0.9782556295394899,
-        "chloroplast_threshold": 0.3821345567703247,
-        "train_seconds": 0.2,
-        "val_recall_at_1fpr": 1.0
+        "chloroplast_threshold": 0.9844580888748169,
+        "train_seconds": 0.199,
+        "val_recall_at_1fpr": 0.8666666666666667,
+        "base_ewr_at_3": 0.09333333333333334,
+        "chloroplast_ewr_at_3": 0.9066666666666666,
+        "test_fpr": 0.007518796992481203,
+        "test_fpr_with_chloroplast": 0.015037593984962405
       }
     ],
     "notes": [
       "Base PreyNet is re-trained without job_task (seeds 0/1/2); \u03b8 = its VAL 1%-FPR threshold. Metrics are means over seeds.",
       "With the chloroplast a prefix is flagged when base risk >= \u03b8 OR the chloroplast fires (p >= its threshold), matching infer.py where a fired chloroplast locks.",
-      "Chloroplast negatives: the synthetic hard negatives + 1,000 benign and 500 other-family prefixes from the LOFO base TRAIN split; threshold = 1% FPR on a held-out 20% of those negative conversations. No TEST data trains or tunes it.",
-      "regression_test: TEST split without job_task (base families + benign).",
+      "Chloroplast negatives: the synthetic hard negatives + whole LOFO-TRAIN conversations (~1,000 benign and ~500 other-family prefixes). Its threshold is the larger of the 1%-FPR thresholds on a held-out 20% of each; no TEST data trains or tunes it.",
+      "regression_test: TEST split without job_task (base families + benign). The chloroplast's 1% cap is on held-out synthetic negatives, not TEST: compare fpr with vs without before claiming the chloroplast adds no false alarms. base vs chloroplast EWR is NOT at matched FPR.",
+      "*_ewr_at_3_std: sample std over the 3 seeds; the proxy test split is fixed across seeds.",
       "sample_efficiency: null where fewer synthetic positives exist than N.",
       "time_to_protection_s = generate_seconds + train_seconds (null if generation time is unknown).",
       "source v1_proxy: half of v1 job_task trains the chloroplast and the other half is the test set. Same generator and prompt as the test set, so it overstates zero-day performance. Not pitch evidence (available: false)."

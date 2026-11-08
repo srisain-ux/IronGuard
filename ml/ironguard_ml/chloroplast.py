@@ -84,16 +84,22 @@ def conversation_features(net: PreyNet, convs: Sequence[Conversation], encoder=N
 
 
 def build_negative_bank(net: PreyNet, train: Sequence[Conversation], encoder=None,
-                        cache_dir: Path | None = CACHE_DIR, seed: int = 0):
-    """(features, groups): up to 1,000 benign + 500 other-family prefixes from TRAIN only."""
-    features, groups = conversation_features(net, train, encoder, cache_dir)
-    benign = np.array([train[g].family == "benign" for g in groups])
+                        cache_dir: Path | None = CACHE_DIR, seed: int = 0,
+                        exclude_ids: frozenset[str] = frozenset()):
+    """(features, groups) of random WHOLE TRAIN conversations: ~1,000 benign + ~500 other-family
+    prefixes. Whole conversations keep the hold-out's per-conversation max p a true maximum.
+    `exclude_ids` keeps the caller's own negatives out, so no conversation gets two group ids."""
     rng = np.random.default_rng(seed)
-    pick = np.concatenate([
-        rng.choice(np.flatnonzero(rows), min(n, int(rows.sum())), replace=False)
-        for rows, n in ((benign, BANK_BENIGN), (~benign, BANK_OTHER))
-    ])
-    return features[pick], groups[pick]
+    picked = []
+    for is_benign, target in ((True, BANK_BENIGN), (False, BANK_OTHER)):
+        pool = [c for c in train if (c.family == "benign") == is_benign and c.id not in exclude_ids]
+        total = 0
+        for i in rng.permutation(len(pool)):
+            if total >= target:
+                break
+            picked.append(pool[i])
+            total += len(pool[i].turns)
+    return conversation_features(net, picked, encoder, cache_dir)
 
 
 def _sha256_file(path: Path) -> str:
@@ -153,11 +159,16 @@ def threshold_at_fpr(negative_maxima: np.ndarray, target: float = TARGET_FPR) ->
     """Lowest float32 threshold with <= target of the negative conversations at p >= threshold.
 
     Same rule as metrics.threshold_at_fpr, but stepped in float32: consumers compare float32 p.
+    Raises if the cap needs a threshold above 1 (negatives saturate at p = 1): such an adapter
+    would fire on them, so it must not be published.
     """
     maxima = np.sort(np.asarray(negative_maxima, dtype=np.float32))
     allowed = math.floor(target * len(maxima))
-    above = np.nextafter(maxima[len(maxima) - allowed - 1], np.float32(np.inf))
-    return min(1.0, float(above))
+    above = float(np.nextafter(maxima[len(maxima) - allowed - 1], np.float32(np.inf)))
+    if above > 1:
+        raise ValueError("chloroplast cannot reach 1% FPR on held-out negatives (p saturates at "
+                         "1); generate more varied positives or hard negatives")
+    return above
 
 
 def _fit(pos: np.ndarray, neg: np.ndarray, seed: int, progress_cb: ProgressCb | None) -> nn.Module:
@@ -191,17 +202,21 @@ def train(pos, neg, family_id, label, alert, progress_cb: ProgressCb | None = No
     pos_convs, neg_convs = _parse_all("pos", pos), _parse_all("neg", neg)
     base = base or load_base()
     pos_f, pos_g = conversation_features(base.net, pos_convs, base.encoder, base.cache_dir)
-    neg_f, neg_g = conversation_features(base.net, neg_convs, base.encoder, base.cache_dir)
-    neg_f = np.concatenate([neg_f, base.bank])
-    neg_g = np.concatenate([neg_g, base.bank_groups + len(neg_convs)])  # disjoint group ids
+    hard_f, hard_g = conversation_features(base.net, neg_convs, base.encoder, base.cache_dir)
+    neg_f = np.concatenate([hard_f, base.bank])
     embedded = time.perf_counter()
 
+    # Hold out 20% of conversations per source, so both get their own 1% cap: the threshold must
+    # hold on the caller's hard negatives too, not just on the larger base bank.
     rng = np.random.default_rng(seed)
-    pos_held, neg_held = _holdout(pos_g, rng), _holdout(neg_g, rng)
-    head = _fit(pos_f[~pos_held], neg_f[~neg_held], seed, progress_cb)
+    pos_held = _holdout(pos_g, rng)
+    hard_held, bank_held = _holdout(hard_g, rng), _holdout(base.bank_groups, rng)
+    head = _fit(pos_f[~pos_held], neg_f[~np.r_[hard_held, bank_held]], seed, progress_cb)
     pos_max = _group_max(_probs(head, pos_f[pos_held]), pos_g[pos_held])
-    neg_max = _group_max(_probs(head, neg_f[neg_held]), neg_g[neg_held])
-    threshold = threshold_at_fpr(neg_max)
+    hard_max = _group_max(_probs(head, hard_f[hard_held]), hard_g[hard_held])
+    bank_max = _group_max(_probs(head, base.bank[bank_held]), base.bank_groups[bank_held])
+    threshold = max(threshold_at_fpr(hard_max), threshold_at_fpr(bank_max))
+    neg_max = np.r_[hard_max, bank_max]
 
     raw = {k: p.detach().numpy().astype("<f4").tobytes()
            for k, p in zip(WEIGHT_ORDER, head.parameters(), strict=True)}
@@ -228,7 +243,8 @@ def train(pos, neg, family_id, label, alert, progress_cb: ProgressCb | None = No
 
 
 def _read_jsonl(path: Path, keep, limit: int) -> list[dict]:
-    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    # split("\n") like data.load_jsonl: splitlines() would also split on U+2028 inside JSON strings
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").split("\n") if line.strip()]
     return [r for r in rows if keep(r)][:limit]
 
 

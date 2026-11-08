@@ -74,7 +74,7 @@ def test_manifest_validates_and_packs_weights(base):
     assert m["id"] == f"cp_task_{m['sha256'][:8]}"
     assert calls[-1][:2] == (STEPS, STEPS) and len(calls) == STEPS // 10
     assert m["metrics"]["n_pos"] == m["metrics"]["n_neg"] == 30
-    assert 0 < m["metrics"]["train_seconds"] < 10
+    assert m["metrics"]["train_seconds"] > 0  # the 10 s budget is checked by the CLI benchmark
 
 
 def test_learns_the_tell_and_reference_apply_agrees(base):
@@ -97,7 +97,8 @@ def test_threshold_allows_at_most_one_percent_in_float32():
     t = threshold_at_fpr(maxima)
     assert (maxima >= np.float32(t)).sum() == 2  # floor(1% of 200)
     assert threshold_at_fpr(np.full(50, 0.5, np.float32)) > 0.5  # ties never sneak past the cap
-    assert threshold_at_fpr(np.ones(10, np.float32)) == 1.0  # capped to the schema maximum
+    with pytest.raises(ValueError, match="saturates"):  # p == 1 negatives: refuse, never cap
+        threshold_at_fpr(np.ones(10, np.float32))
 
 
 @pytest.mark.parametrize("kwargs, error", [
@@ -127,3 +128,13 @@ def test_load_base_refuses_missing_or_stale_bank(tmp_path, base):
     (tmp_path / "preynet.pt").write_bytes(b"other weights")
     with pytest.raises(ValueError, match="other PreyNet weights"):
         load_base(tmp_path)
+
+
+def test_bank_keeps_whole_conversations_and_excludes_callers_negatives(base):
+    other = [_parse(record(i, "pig_butchering", [f"a {i}", "b", "c", "d"]), "o") for i in range(200)]
+    benign = [_parse(record(i, "benign", [f"x {i}", "y"]), "b") for i in range(3)]
+    _, groups = build_negative_bank(base.net, benign + other, fake_encoder, cache_dir=None,
+                                           exclude_ids=frozenset({"benign_0", "benign_1"}))
+    sizes = np.bincount(groups)
+    assert sizes[0] == 2  # only benign_2 is left, with both of its prefixes
+    assert (sizes[1:] == 4).all() and sizes[1:].sum() == 500  # whole conversations, ~500 target

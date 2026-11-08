@@ -44,14 +44,17 @@ def test_proxy_never_trains_on_its_test_half(tmp_path):
 
 def test_algae_data_tests_on_every_held_out_conversation(tmp_path):
     splits, recs = corpus()
-    pos = [record(i, ZD_FAMILY, ["job?", "ok", "deposit"]) for i in range(6)]
+    pos = [record(i, ZD_FAMILY, ["job?", "ok", f"deposit {i}"]) for i in range(6)]
+    copy = record(99, ZD_FAMILY, [t["text"] for t in recs["job_task_200"]["turns"]])
     neg = [{**record(i, "benign", ["real recruiter", "ok", "see you"]), "hard_negative": True}
            for i in range(6)]
-    (tmp_path / "zd.jsonl").write_text("\n".join(json.dumps(r) for r in pos + neg))
+    (tmp_path / "zd.jsonl").write_text("\n".join(json.dumps(r) for r in [*pos, copy, *neg]))
     (tmp_path / "meta.json").write_text(json.dumps({"alert": "Job deposit.", "generate_seconds": 9}))
-    data = synthetic_data(splits, recs, tmp_path)
+    data = synthetic_data(splits, recs, tmp_path,
+                          lambda c: fake_encoder([t.text for t in c.turns]).mean(axis=0))
     assert (data["source"], len(data["pos"]), len(data["neg"]), len(data["test"])) == \
         ("algae", 6, 6, 16)
+    assert data["n_dropped_near_test"] == 1  # the copy of a held-out test conversation
     assert (data["alert"], data["generate_seconds"]) == ("Job deposit.", 9)
 
 

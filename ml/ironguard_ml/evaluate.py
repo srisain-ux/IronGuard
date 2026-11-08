@@ -2,7 +2,7 @@
 and thresholds, TEST reporting (§6.4).
 
 `make eval` works before v1 lands by falling back to the seed smoke fixture.
-Missing metrics are null; zero-day (LOFO) results are not produced here yet.
+Missing metrics are null. `zero_day` holds the job_task LOFO experiment (zero_day.py).
 """
 
 import argparse
@@ -227,7 +227,8 @@ def main():
                   "Lock-on is inference-only, so PreyNet without lock-on is flicker_rate_no_lock.",
                   "zero_day: LOFO for job_task (see zero_day.notes); null if data is too small."],
     }
-    v1_records = {r["id"]: r for r in read_records(data)}
+    # load_splits may fall back to data/seed when v1 is missing: read records from the same place
+    v1_records = {r["id"]: r for r in read_records(data if version else DATA_DIR / "seed")}
     result = {**evaluate(splits, dataset, with_preynet=True),
               "zero_day": run_lofo(splits, v1_records)}
     schema = json.loads((ROOT / "contracts/schemas/metrics.schema.json").read_text())
