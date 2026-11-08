@@ -4,8 +4,8 @@
 > Format for each entry: `[HH:MM][P<phase>] what changed | skipped | unverified`
 
 ## Now
-- Phase: P2
-- Working on: M2 is merged into shared `main`; `c/main` is synced and ready for the next C task.
+- Phase: P3
+- Working on: M3 browser runtime is merged, checked and pushed to `c/main`; ready for the team PR.
 - Blocked by: Real Algae training events and full evaluation artifacts remain with B and A.
 
 ## Log
@@ -83,3 +83,5 @@
 - `web/src/runtime/browser.ts`: `scoreLocal(turns, manifests?, onStatus?) -> Promise<ScoreResponse[]>` (one response per prefix; mock mode returns the contract fixture). `preynet.ts`: `scoreBrowser`, injectable `scoreVectors`, `softmax`, `confidenceBand`; output names `family_logits [1,7]`, `stage_logits [1,5]`, `tts_logits [1,5]`, `attention [1,turns]`, `features [1,640]`. `lockon.ts`: `lockStates`. `chloroplast.ts`: `compileChloroplast`, `decodeFloat32`, `isChloroplastManifest`, `vitality`.
 - `pnpm --dir web models:prepare` stages model/calibration pairs and the correct installed WASM/MJS files; it runs before dev/build and retains an existing staged pair if upstream ONNX is absent. Generated assets are ignored under `web/public/models`, `web/public/ort` and `web/public/transformers`. No native ONNX/Sharp builds are needed for the browser. Existing dependency pins are retained; only the requested runtime packages and a pinned TS test runner were added inside web.
 - `VITE_USE_MOCKS=0 make web` on port 5173 uses the real staged model. Start matching Python inference with `make api` on 8000 for the debug comparison. `web/README.md` documents the express-drop staging commands, mocks, numerical parity and numbered DevTools → Network privacy proof. Normal `/phone` scoring never posts text; only the debug button submits the immutable public example. Reef alerts are explicit descriptions sent to Algae, with a visible reminder to exclude private messages.
+
+- [06:07][P3] M3 complete: committed the root C progress work as `[C][P3] finish work` (`8d53366`), merged the only candidate `c/browser-runtime` (four commits), and retained both sides of the C-only progress conflict. Ran `git switch c/main` and `scripts/merge-window.sh c/browser-runtime` in the existing clean integration checkout; rebase on `origin/main` succeeded and push reached `1f165f4`. `make validate check-web check-bridge`, all 13 runtime tests, all 11 bridge tests, mock production build, whitespace and C-only diff audit passed. Rechecked correctness/privacy/contracts and code size directly; named ECC/Ponytail review skills remain unavailable after local discovery. Preserved the ignored ONNX/calibration pair under root `web/public/models`, refreshed root C sources/dependencies, removed the merged feature worktree and deleted `c/browser-runtime` with `git branch -d`. Verified all 37 root A/B dirty paths retain identical bytes or deletion state. | skipped: cleaning/stashing/committing A/B changes, PR creation (user requests manual compare-page handoff), absent named review invocations | unverified: actual Algae training, physical phone delivery, fresh real browser/Python parity and team approval. Final progress commit will be checked/pushed with the helper again; the clean integration worktree can then be removed.
