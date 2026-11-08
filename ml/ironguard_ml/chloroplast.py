@@ -4,7 +4,8 @@
 contracts/schemas/chloroplast.schema.json. Negatives = the caller's hard negatives + a bank of base
 benign and other-family prefixes sampled from TRAIN (artifacts/negative_bank.npz, written by
 `make export`). The threshold allows <= 1% conversation-level false alarms on a held-out 20% of
-the negative conversations. `python -m ironguard_ml.chloroplast` prints a timing benchmark.
+the BENIGN negative conversations: other-family scams train the head to be specific, but firing on
+one is still a correct scam alert, so they don't set the cap. `python -m ironguard_ml.chloroplast` prints a timing benchmark.
 """
 
 import argparse
@@ -62,6 +63,7 @@ class Base:
     net: PreyNet
     bank: np.ndarray  # (n, 640) float32
     bank_groups: np.ndarray  # (n,) source conversation per row (for the conversation hold-out)
+    bank_benign: np.ndarray | None = None  # (n,) bool: benign rows set the 1% cap (None = all)
     encoder: Encoder | None = None  # None = MiniLM
     cache_dir: Path | None = None  # None = embed in memory only (API jobs)
 
@@ -85,7 +87,7 @@ def conversation_features(net: PreyNet, convs: Sequence[Conversation], encoder=N
 def build_negative_bank(net: PreyNet, train: Sequence[Conversation], encoder=None,
                         cache_dir: Path | None = CACHE_DIR, seed: int = 0,
                         exclude_ids: frozenset[str] = frozenset()):
-    """(features, groups) of random WHOLE TRAIN conversations: ~1,000 benign + ~500 other-family
+    """(features, groups, benign) of random WHOLE TRAIN conversations: ~1,000 benign + ~500 other-family
     prefixes. Whole conversations keep the hold-out's per-conversation max p a true maximum.
     `exclude_ids` keeps the caller's own negatives out, so no conversation gets two group ids."""
     rng = np.random.default_rng(seed)
@@ -98,16 +100,18 @@ def build_negative_bank(net: PreyNet, train: Sequence[Conversation], encoder=Non
                 break
             picked.append(pool[i])
             total += len(pool[i].turns)
-    return conversation_features(net, picked, encoder, cache_dir)
+    features, groups = conversation_features(net, picked, encoder, cache_dir)
+    return features, groups, np.array([picked[g].family == "benign" for g in groups])
 
 
 def _sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def save_bank(artifacts: Path, features: np.ndarray, groups: np.ndarray) -> Path:
+def save_bank(artifacts: Path, features: np.ndarray, groups: np.ndarray,
+              benign: np.ndarray) -> Path:
     path = artifacts / BANK_FILE
-    np.savez(path, features=features.astype(np.float32), groups=groups,
+    np.savez(path, features=features.astype(np.float32), groups=groups, benign=benign,
              preynet_sha256=_sha256_file(artifacts / "preynet.pt"))
     return path
 
@@ -121,7 +125,9 @@ def load_base(artifacts: Path = ARTIFACTS) -> Base:
     with np.load(bank_path) as bank:
         if str(bank["preynet_sha256"]) != _sha256_file(artifacts / "preynet.pt"):
             raise ValueError(f"{bank_path} was built for other PreyNet weights (run `make export`)")
-        return Base(load_net(artifacts), bank["features"], bank["groups"])
+        if "benign" not in bank:
+            raise ValueError(f"{bank_path} predates the benign-only cap (run `make export`)")
+        return Base(load_net(artifacts), bank["features"], bank["groups"], bank["benign"])
 
 
 def _parse_all(name: str, records) -> list[Conversation]:
@@ -205,11 +211,14 @@ def train(pos, neg, family_id, label, alert, progress_cb: ProgressCb | None = No
     neg_f = np.concatenate([hard_f, base.bank])
     embedded = time.perf_counter()
 
-    # Hold out 20% of conversations per source, so both get their own 1% cap: the threshold must
-    # hold on the caller's hard negatives too, not just on the larger base bank.
+    # Hold out 20% of benign conversations per source, so both get their own 1% cap: the threshold
+    # must hold on the caller's hard negatives too, not just on the larger base bank. Other-family
+    # bank rows all train the head; they never set the cap (firing on a scam is not a false alarm).
     rng = np.random.default_rng(seed)
-    pos_held = _holdout(pos_g, rng)
-    hard_held, bank_held = _holdout(hard_g, rng), _holdout(base.bank_groups, rng)
+    pos_held, hard_held = _holdout(pos_g, rng), _holdout(hard_g, rng)
+    bank_held = np.zeros(len(base.bank), bool)
+    benign = np.ones(len(base.bank), bool) if base.bank_benign is None else base.bank_benign
+    bank_held[benign] = _holdout(base.bank_groups[benign], rng)
     head = _fit(pos_f[~pos_held], neg_f[~np.r_[hard_held, bank_held]], seed, progress_cb)
     pos_max = _group_max(_probs(head, pos_f[pos_held]), pos_g[pos_held])
     hard_max = _group_max(_probs(head, hard_f[hard_held]), hard_g[hard_held])

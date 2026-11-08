@@ -93,7 +93,7 @@ heads (from f):
 ```
 
 ### 4.3 Training examples
-Every conversation of length n yields n prefixes (turns 1..k for k = 1..n). Labels per prefix: final `family`, `next_stage` (the stage of turn k+1, or `benign` at the end), and `tts` (strike_turn − k, bucketed; `none` for benign or past-strike). Only prefixes with k ≤ strike_turn are used for `tts`.
+Every conversation of length n yields n prefixes (turns 1..k for k = 1..n). Labels per prefix: final `family`, `next_stage` (the stage of turn k+1, or `benign` at the end), and `tts` (strike_turn − k, bucketed; `none` for benign or past-strike). Only prefixes with k ≤ strike_turn are used for `tts`. *Decision (A4, benign-opener splice):* TRAIN (never VAL/TEST) also contains every conversation a second time, read after 1–3 opening turns of a different random benign TRAIN conversation; only the conversation's own prefixes are added, with their original labels. Why: Nemotron scams look scammy from turn 1, so the GRU had learned "harmless start = harmless thread" and scored the pig-butchering example's strike turn 0.02. Splicing benign openers into benign conversations too keeps "the topic changed" from becoming a scam signal.
 
 ### 4.4 Loss and optimization
 `L = CE(family) + 0.5·CE(next_stage) + 0.5·CE(tts)`, with class weights from inverse frequency. AdamW (lr 2e-3, wd 1e-4), batch 64, up to 20 epochs, early stopping on **val EWR@2**. CPU training takes under 2 min with cached embeddings. Run seeds {0, 1, 2} and report mean ± std.
@@ -120,7 +120,7 @@ Every conversation of length n yields n prefixes (turns 1..k for k = 1..n). Labe
 2. **Algae (Nemotron, multi-step):** plan 8 mutation axes → generate N positive conversations (default 120) **plus** N hard-negative look-alikes (legitimate parking notices) → **critique pass** (Nemotron as judge: realism 1–5, label correctness; drop anything < 4) → dedupe.
 3. **Feature extraction:** run frozen PreyNet → `features` (640-d) for every prefix k ≥ 1.
 4. **Train the chloroplast head:** `Linear 640→32 → GELU → Linear 32→1`, weighted BCE. Positives = prefixes of new-family conversations; negatives = hard negatives + a random 1,000 base benign prefixes + 500 prefixes from other scam families. 300 steps of AdamW (lr 3e-3). Target: **< 10 s on a laptop CPU**, about 20.6k params ≈ **82 KB** fp32.
-5. **Threshold** = the value that gives 1% FPR on a held-out 20% of the synthetic negatives.
+5. **Threshold** = the value that gives 1% FPR on a held-out 20% of the synthetic negatives. *Decision (A4):* only **benign** negatives (the caller's hard negatives and the bank's benign rows) set this cap. Other-family prefixes still train the head, which keeps it specific (on a toll-as-zero-day proxy it fires on 4% of other-family TEST scams vs 44% without them), but firing on another scam is a correct scam alert, not a false alarm (one-off proxy run, not `make eval` output and not pitch evidence). Capping on them pushed a live parking-boot adapter to threshold 0.99999 (recall 0.167); on the proxy, recall goes from 0.44 to 0.89.
 6. **Publish** a manifest (`contracts/schemas/chloroplast.schema.json`) with weights base64-encoded as float32 little-endian, plus metrics, train seconds, size and sha256.
 
 ### 5.2 On-device use (C implements in JS; A provides a reference implementation in `infer.py`)

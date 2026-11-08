@@ -1,33 +1,33 @@
 {
   "available": true,
-  "generated_at": "2026-11-08T11:52:56.789658+00:00",
+  "generated_at": "2026-11-08T13:07:06.436960+00:00",
   "dataset": {
     "version": "v1",
     "n_conversations": 1773,
-    "n_test": 266,
+    "n_test": 259,
     "n_test_human": 0,
     "split_seed": 0,
     "split_counts": {
-      "train": 1240,
-      "val": 267,
-      "test": 266,
+      "train": 1245,
+      "val": 269,
+      "test": 259,
       "test_human": 0
     },
     "split_denominators": {
       "train": {
-        "scam": 622,
-        "benign": 618,
-        "hard_negative": 274
+        "scam": 625,
+        "benign": 620,
+        "hard_negative": 275
       },
       "val": {
-        "scam": 135,
-        "benign": 132,
-        "hard_negative": 59
+        "scam": 136,
+        "benign": 133,
+        "hard_negative": 61
       },
       "test": {
-        "scam": 133,
-        "benign": 133,
-        "hard_negative": 59
+        "scam": 129,
+        "benign": 130,
+        "hard_negative": 56
       },
       "test_human": {
         "scam": 0,
@@ -43,7 +43,7 @@
       "abstains=true means the VAL FPR cap required a threshold above 1.",
       "PreyNet entries are means over seeds 0/1/2; lead_time_std is the sample std.",
       "PreyNet temperatures, thresholds and early stopping use VAL only.",
-      "VAL has 132 benign conversations, so the 1% cap allows 1 VAL false alarms; fpr is the resulting TEST benign FPR.",
+      "VAL has 133 benign conversations, so the 1% cap allows 1 VAL false alarms; fpr is the resulting TEST benign FPR.",
       "native: for models that abstain at the 1% cap, metrics at their own operating point (with its FPR).",
       "ece_risk_*: calibration of risk = 1 - P(benign) against is-scam per TEST prefix (the number the UI shows).",
       "theta_lock = each seed's VAL 1%-FPR threshold (\u00a74.6 tuned on VAL), so flicker is measured at the reported operating point.",
@@ -88,36 +88,36 @@
       },
       "native": {
         "threshold": 0.5,
-        "val_fpr": 0.21212121212121213,
+        "val_fpr": 0.2857142857142857,
         "ewr_at_k": [
-          0.3082706766917293,
-          0.3082706766917293,
-          0.5037593984962406,
-          0.5263157894736842,
-          0.6240601503759399,
-          0.6240601503759399
+          0.32558139534883723,
+          0.32558139534883723,
+          0.5426356589147286,
+          0.5581395348837209,
+          0.6589147286821705,
+          0.6589147286821705
         ],
-        "lead_time": 2.0902255639097747,
-        "strike_recall": 0.6390977443609023,
-        "hard_neg_fpr": 0.3389830508474576,
-        "fpr": 0.2556390977443609
+        "lead_time": 1.9922480620155039,
+        "strike_recall": 0.6666666666666666,
+        "hard_neg_fpr": 0.42857142857142855,
+        "fpr": 0.25384615384615383
       }
     },
     "B1": {
       "ewr_at_k": [
-        0.045112781954887216,
-        0.05263157894736842,
-        0.15789473684210525,
-        0.17293233082706766,
-        0.21804511278195488,
-        0.21804511278195488
+        0.05426356589147287,
+        0.05426356589147287,
+        0.18604651162790697,
+        0.1937984496124031,
+        0.21705426356589147,
+        0.2248062015503876
       ],
-      "lead_time": 0.631578947368421,
-      "strike_recall": 0.21804511278195488,
+      "lead_time": 0.5891472868217055,
+      "strike_recall": 0.2248062015503876,
       "hard_neg_fpr": 0.0,
-      "fpr": 0.0,
-      "threshold": 0.9478361497793013,
-      "val_fpr": 0.007575757575757576,
+      "fpr": 0.007692307692307693,
+      "threshold": 0.9641976047105093,
+      "val_fpr": 0.007518796992481203,
       "abstains": false,
       "test_human": {
         "ewr_at_k": [
@@ -136,19 +136,19 @@
     },
     "B2": {
       "ewr_at_k": [
-        0.18796992481203006,
-        0.24060150375939848,
-        0.42105263157894735,
-        0.47368421052631576,
-        0.518796992481203,
-        0.5263157894736842
+        0.023255813953488372,
+        0.03875968992248062,
+        0.12403100775193798,
+        0.14728682170542637,
+        0.18604651162790697,
+        0.21705426356589147
       ],
-      "lead_time": 1.6390977443609023,
-      "strike_recall": 0.5413533834586466,
-      "hard_neg_fpr": 0.01694915254237288,
-      "fpr": 0.007518796992481203,
-      "threshold": 0.9305182695388795,
-      "val_fpr": 0.007575757575757576,
+      "lead_time": 0.46511627906976744,
+      "strike_recall": 0.2248062015503876,
+      "hard_neg_fpr": 0.017857142857142856,
+      "fpr": 0.007692307692307693,
+      "threshold": 0.9766979813575746,
+      "val_fpr": 0.007518796992481203,
       "abstains": false,
       "test_human": {
         "ewr_at_k": [
@@ -167,19 +167,19 @@
     },
     "B3": {
       "ewr_at_k": [
-        0.41353383458646614,
-        0.45864661654135336,
-        0.48120300751879697,
-        0.48872180451127817,
-        0.48872180451127817,
-        0.49624060150375937
+        0.17054263565891473,
+        0.17054263565891473,
+        0.17054263565891473,
+        0.17829457364341086,
+        0.17829457364341086,
+        0.17829457364341086
       ],
-      "lead_time": 2.112781954887218,
-      "strike_recall": 0.49624060150375937,
-      "hard_neg_fpr": 0.01694915254237288,
-      "fpr": 0.007518796992481203,
-      "threshold": 0.9386161843910859,
-      "val_fpr": 0.007575757575757576,
+      "lead_time": 0.6356589147286822,
+      "strike_recall": 0.17829457364341086,
+      "hard_neg_fpr": 0.017857142857142856,
+      "fpr": 0.007692307692307693,
+      "threshold": 0.9876859615489377,
+      "val_fpr": 0.007518796992481203,
       "abstains": false,
       "test_human": {
         "ewr_at_k": [
@@ -198,24 +198,24 @@
     },
     "PreyNet": {
       "ewr_at_k": [
-        0.47117794486215536,
-        0.5914786967418546,
-        0.6666666666666666,
-        0.7192982456140351,
-        0.7393483709273182,
-        0.7393483709273182
+        0.3565891472868217,
+        0.47803617571059426,
+        0.6382428940568475,
+        0.6770025839793282,
+        0.7080103359173125,
+        0.7183462532299741
       ],
-      "lead_time": 2.7994987468671684,
-      "strike_recall": 0.7393483709273182,
-      "hard_neg_fpr": 0.03389830508474576,
-      "fpr": 0.017543859649122806,
-      "ece_before": 0.07204400478113922,
-      "ece_after": 0.024779165571802042,
-      "ece_risk_before": 0.06511447777295494,
-      "ece_risk_after": 0.038875518174007036,
+      "lead_time": 2.351421188630491,
+      "strike_recall": 0.7183462532299741,
+      "hard_neg_fpr": 0.017857142857142856,
+      "fpr": 0.007692307692307693,
+      "ece_before": 0.059489752383571924,
+      "ece_after": 0.024589123372626847,
+      "ece_risk_before": 0.05977076991835486,
+      "ece_risk_after": 0.04483018612425275,
       "flicker_rate": 0.0,
-      "flicker_rate_no_lock": 0.06708361253815799,
-      "lead_time_std": 0.32394877395691746,
+      "flicker_rate_no_lock": 0.054621045402756314,
+      "lead_time_std": 0.11636517053434317,
       "abstains": false,
       "test_human": {
         "ewr_at_k": [
@@ -234,51 +234,51 @@
       "seeds": [
         {
           "seed": 0,
-          "epoch": 7,
-          "val_ewr_at_2": 0.5333333333333333,
-          "threshold": 0.9882501363754274,
-          "val_fpr": 0.007575757575757576,
-          "lead_time": 2.6315789473684212
+          "epoch": 6,
+          "val_ewr_at_2": 0.4632352941176471,
+          "threshold": 0.9853252768516542,
+          "val_fpr": 0.007518796992481203,
+          "lead_time": 2.356589147286822
         },
         {
           "seed": 1,
-          "epoch": 15,
-          "val_ewr_at_2": 0.6444444444444445,
-          "threshold": 0.965920925140381,
-          "val_fpr": 0.007575757575757576,
-          "lead_time": 3.172932330827068
+          "epoch": 2,
+          "val_ewr_at_2": 0.4264705882352941,
+          "threshold": 0.988040864467621,
+          "val_fpr": 0.007518796992481203,
+          "lead_time": 2.4651162790697674
         },
         {
           "seed": 2,
           "epoch": 8,
-          "val_ewr_at_2": 0.5481481481481482,
-          "threshold": 0.9728266000747682,
-          "val_fpr": 0.007575757575757576,
-          "lead_time": 2.593984962406015
+          "val_ewr_at_2": 0.4632352941176471,
+          "threshold": 0.9890819787979127,
+          "val_fpr": 0.007518796992481203,
+          "lead_time": 2.2325581395348837
         }
       ],
       "shipped_matches_eval": true
     },
     "PreyNet_no_attention": {
       "ewr_at_k": [
-        0.48370927318295737,
-        0.5739348370927319,
-        0.669172932330827,
-        0.706766917293233,
-        0.7167919799498746,
-        0.7218045112781954
+        0.4082687338501292,
+        0.5116279069767442,
+        0.6537467700258398,
+        0.6925064599483205,
+        0.7260981912144703,
+        0.7286821705426356
       ],
-      "lead_time": 2.7794486215538847,
-      "strike_recall": 0.7218045112781954,
-      "hard_neg_fpr": 0.01694915254237288,
-      "fpr": 0.010025062656641603,
-      "ece_before": 0.07742744460453312,
-      "ece_after": 0.0298570773343621,
-      "ece_risk_before": 0.08528548500075533,
-      "ece_risk_after": 0.06673138043064517,
+      "lead_time": 2.428940568475452,
+      "strike_recall": 0.7286821705426356,
+      "hard_neg_fpr": 0.017857142857142856,
+      "fpr": 0.007692307692307693,
+      "ece_before": 0.06386768849235828,
+      "ece_after": 0.024614832326305628,
+      "ece_risk_before": 0.07555105749552495,
+      "ece_risk_after": 0.06758964943737257,
       "flicker_rate": 0.0,
-      "flicker_rate_no_lock": 0.08047324633882273,
-      "lead_time_std": 0.1946676413948008,
+      "flicker_rate_no_lock": 0.09350060006000599,
+      "lead_time_std": 0.13185892322659507,
       "abstains": false,
       "test_human": {
         "ewr_at_k": [
@@ -297,50 +297,50 @@
       "seeds": [
         {
           "seed": 0,
-          "epoch": 3,
-          "val_ewr_at_2": 0.5333333333333333,
-          "threshold": 0.9923089146614076,
-          "val_fpr": 0.007575757575757576,
-          "lead_time": 2.6315789473684212
+          "epoch": 2,
+          "val_ewr_at_2": 0.49264705882352944,
+          "threshold": 0.991946041584015,
+          "val_fpr": 0.007518796992481203,
+          "lead_time": 2.5271317829457365
         },
         {
           "seed": 1,
-          "epoch": 15,
-          "val_ewr_at_2": 0.6444444444444445,
-          "threshold": 0.9767736196517945,
-          "val_fpr": 0.007575757575757576,
-          "lead_time": 3.0
+          "epoch": 5,
+          "val_ewr_at_2": 0.4338235294117647,
+          "threshold": 0.99261212348938,
+          "val_fpr": 0.007518796992481203,
+          "lead_time": 2.2790697674418605
         },
         {
           "seed": 2,
-          "epoch": 9,
-          "val_ewr_at_2": 0.5555555555555556,
-          "threshold": 0.9757372736930848,
-          "val_fpr": 0.007575757575757576,
-          "lead_time": 2.706766917293233
+          "epoch": 11,
+          "val_ewr_at_2": 0.49264705882352944,
+          "threshold": 0.9820538759231568,
+          "val_fpr": 0.007518796992481203,
+          "lead_time": 2.4806201550387597
         }
       ]
     },
     "PreyNet_no_multitask": {
       "ewr_at_k": [
-        0.48370927318295737,
-        0.5413533834586466,
-        0.6240601503759399,
-        0.6641604010025062,
-        0.6842105263157894,
-        0.6842105263157894
+        0.4082687338501292,
+        0.43927648578811374,
+        0.607235142118863,
+        0.627906976744186,
+        0.6589147286821705,
+        0.6589147286821705
       ],
-      "lead_time": 2.649122807017544,
-      "strike_recall": 0.6842105263157894,
-      "hard_neg_fpr": 0.022598870056497175,
-      "fpr": 0.012531328320802004,
-      "ece_before": 0.05512494626180479,
-      "ece_after": 0.021259437490932856,
-      "ece_risk_before": 0.06018701455395973,
-      "ece_risk_after": 0.042074277770488305,
+      "lead_time": 2.222222222222222,
+      "strike_recall": 0.661498708010336,
+      "hard_neg_fpr": 0.023809523809523808,
+      "fpr": 0.010256410256410256,
+      "ece_before": 0.048750964019482375,
+      "ece_after": 0.02852137164558019,
+      "ece_risk_before": 0.08076831518536047,
+      "ece_risk_after": 0.08411632480558205,
       "flicker_rate": 0.0,
-      "flicker_rate_no_lock": 0.032500741729713685,
-      "lead_time_std": 0.2992758264777541,
+      "flicker_rate_no_lock": 0.06492038169379351,
+      "lead_time_std": 0.04542221145025059,
       "abstains": false,
       "test_human": {
         "ewr_at_k": [
@@ -359,27 +359,27 @@
       "seeds": [
         {
           "seed": 0,
-          "epoch": 16,
-          "val_ewr_at_2": 0.562962962962963,
-          "threshold": 0.9692894816398622,
-          "val_fpr": 0.007575757575757576,
-          "lead_time": 2.736842105263158
+          "epoch": 2,
+          "val_ewr_at_2": 0.38235294117647056,
+          "threshold": 0.9930179119110109,
+          "val_fpr": 0.007518796992481203,
+          "lead_time": 2.1705426356589146
         },
         {
           "seed": 1,
-          "epoch": 8,
-          "val_ewr_at_2": 0.5259259259259259,
-          "threshold": 0.9721127152442933,
-          "val_fpr": 0.007575757575757576,
-          "lead_time": 2.8947368421052633
+          "epoch": 10,
+          "val_ewr_at_2": 0.4632352941176471,
+          "threshold": 0.9810934066772462,
+          "val_fpr": 0.007518796992481203,
+          "lead_time": 2.255813953488372
         },
         {
           "seed": 2,
           "epoch": 1,
-          "val_ewr_at_2": 0.4962962962962963,
-          "threshold": 0.9836629629135133,
-          "val_fpr": 0.007575757575757576,
-          "lead_time": 2.3157894736842106
+          "val_ewr_at_2": 0.38235294117647056,
+          "threshold": 0.9901046752929689,
+          "val_fpr": 0.007518796992481203,
+          "lead_time": 2.24031007751938
         }
       ]
     }
@@ -392,76 +392,76 @@
     "source": "v1_proxy",
     "alert": "Texts offer an easy remote job, then ask you to pay a deposit to unlock higher-paying tasks.",
     "k": 3,
-    "base_ewr_at_3": 0.10666666666666667,
-    "chloroplast_ewr_at_3": 0.8666666666666667,
-    "base_ewr_at_3_std": 0.013333333333333329,
-    "chloroplast_ewr_at_3_std": 0.035276684147527854,
+    "base_ewr_at_3": 0.06666666666666667,
+    "chloroplast_ewr_at_3": 0.9511111111111111,
+    "base_ewr_at_3_std": 0.05811865258054231,
+    "chloroplast_ewr_at_3_std": 0.02775554665954843,
     "base": {
       "ewr_at_k": [
-        0.044444444444444446,
-        0.062222222222222213,
-        0.10666666666666667,
-        0.14666666666666667,
-        0.15555555555555556,
-        0.16
+        0.022222222222222223,
+        0.04,
+        0.06666666666666667,
+        0.07555555555555556,
+        0.08888888888888889,
+        0.09777777777777778
       ],
-      "lead_time": 0.5511111111111111,
-      "strike_recall": 0.16,
+      "lead_time": 0.28444444444444444,
+      "strike_recall": 0.09777777777777778,
       "fpr": null,
       "hard_neg_fpr": null
     },
     "chloroplast": {
       "ewr_at_k": [
-        0.791111111111111,
-        0.8088888888888889,
-        0.8666666666666667,
-        0.8977777777777778,
-        0.9066666666666666,
-        0.9155555555555557
+        0.8488888888888889,
+        0.8755555555555556,
+        0.9511111111111111,
+        0.9555555555555556,
+        0.96,
+        0.96
       ],
-      "lead_time": 3.857777777777778,
-      "strike_recall": 0.9155555555555557,
+      "lead_time": 4.1066666666666665,
+      "strike_recall": 0.96,
       "fpr": null,
       "hard_neg_fpr": null
     },
     "regression_test": {
       "base": {
         "ewr_at_k": [
-          0.44744744744744747,
-          0.5435435435435435,
-          0.6786786786786787,
-          0.7417417417417417,
-          0.7477477477477478,
-          0.7537537537537538
+          0.31790123456790126,
+          0.4537037037037037,
+          0.5987654320987654,
+          0.6265432098765432,
+          0.6512345679012346,
+          0.6604938271604938
         ],
-        "lead_time": 2.702702702702703,
-        "strike_recall": 0.7567567567567567,
-        "fpr": 0.015037593984962405,
-        "hard_neg_fpr": 0.02824858757062147
+        "lead_time": 2.265432098765432,
+        "strike_recall": 0.6604938271604938,
+        "fpr": 0.010256410256410256,
+        "hard_neg_fpr": 0.023809523809523808
       },
       "with_chloroplast": {
         "ewr_at_k": [
-          0.44744744744744747,
-          0.5435435435435435,
-          0.6786786786786787,
-          0.7417417417417417,
-          0.7477477477477478,
-          0.7537537537537538
+          0.3240740740740741,
+          0.4598765432098766,
+          0.601851851851852,
+          0.6296296296296297,
+          0.6543209876543209,
+          0.6790123456790124
         ],
-        "lead_time": 2.702702702702703,
-        "strike_recall": 0.7567567567567567,
-        "fpr": 0.020050125313283207,
-        "hard_neg_fpr": 0.03954802259887005
+        "lead_time": 2.2993827160493825,
+        "strike_recall": 0.6790123456790124,
+        "fpr": 0.010256410256410256,
+        "hard_neg_fpr": 0.023809523809523808
       }
     },
     "sample_efficiency": [
       {
         "n": 25,
-        "ewr_at_3": 0.8044444444444444
+        "ewr_at_3": 0.8755555555555556
       },
       {
         "n": 50,
-        "ewr_at_3": 0.8711111111111111
+        "ewr_at_3": 0.9333333333333335
       },
       {
         "n": 100,
@@ -472,7 +472,7 @@
         "ewr_at_3": null
       }
     ],
-    "train_seconds": 0.214,
+    "train_seconds": 0.213,
     "generate_seconds": null,
     "time_to_protection_s": null,
     "n_synthetic_pos": 74,
@@ -482,42 +482,43 @@
     "seeds": [
       {
         "seed": 0,
-        "theta": 0.972992777824402,
-        "chloroplast_threshold": 0.994346022605896,
-        "train_seconds": 0.239,
+        "theta": 0.992388427257538,
+        "chloroplast_threshold": 0.8103798031806946,
+        "train_seconds": 0.238,
         "val_recall_at_1fpr": 0.9333333333333333,
-        "base_ewr_at_3": 0.10666666666666667,
-        "chloroplast_ewr_at_3": 0.8533333333333334,
-        "test_fpr": 0.015037593984962405,
-        "test_fpr_with_chloroplast": 0.022556390977443608
+        "base_ewr_at_3": 0.04,
+        "chloroplast_ewr_at_3": 0.96,
+        "test_fpr": 0.007692307692307693,
+        "test_fpr_with_chloroplast": 0.007692307692307693
       },
       {
         "seed": 1,
-        "theta": 0.9692705869674684,
-        "chloroplast_threshold": 0.9990520477294922,
-        "train_seconds": 0.204,
+        "theta": 0.9889467358589173,
+        "chloroplast_threshold": 0.9768781065940857,
+        "train_seconds": 0.201,
         "val_recall_at_1fpr": 1.0,
-        "base_ewr_at_3": 0.12,
-        "chloroplast_ewr_at_3": 0.84,
-        "test_fpr": 0.022556390977443608,
-        "test_fpr_with_chloroplast": 0.022556390977443608
+        "base_ewr_at_3": 0.13333333333333333,
+        "chloroplast_ewr_at_3": 0.9733333333333334,
+        "test_fpr": 0.007692307692307693,
+        "test_fpr_with_chloroplast": 0.007692307692307693
       },
       {
         "seed": 2,
-        "theta": 0.9782556295394899,
-        "chloroplast_threshold": 0.9844580888748169,
-        "train_seconds": 0.199,
-        "val_recall_at_1fpr": 0.8666666666666667,
-        "base_ewr_at_3": 0.09333333333333334,
-        "chloroplast_ewr_at_3": 0.9066666666666666,
-        "test_fpr": 0.007518796992481203,
-        "test_fpr_with_chloroplast": 0.015037593984962405
+        "theta": 0.9904929399490358,
+        "chloroplast_threshold": 0.9863630533218384,
+        "train_seconds": 0.201,
+        "val_recall_at_1fpr": 0.9333333333333333,
+        "base_ewr_at_3": 0.02666666666666667,
+        "chloroplast_ewr_at_3": 0.92,
+        "test_fpr": 0.015384615384615385,
+        "test_fpr_with_chloroplast": 0.015384615384615385
       }
     ],
     "notes": [
       "Base PreyNet is re-trained without job_task (seeds 0/1/2); \u03b8 = its VAL 1%-FPR threshold. Metrics are means over seeds.",
       "With the chloroplast a prefix is flagged when base risk >= \u03b8 OR the chloroplast fires (p >= its threshold), matching infer.py where a fired chloroplast locks.",
-      "Chloroplast negatives: the synthetic hard negatives + whole LOFO-TRAIN conversations (~1,000 benign and ~500 other-family prefixes). Its threshold is the larger of the 1%-FPR thresholds on a held-out 20% of each; no TEST data trains or tunes it.",
+      "Chloroplast negatives: the synthetic hard negatives + whole LOFO-TRAIN conversations (~1,000 benign and ~500 other-family prefixes). Its threshold is the larger of the 1%-FPR thresholds on a held-out 20% of the hard negatives and of the bank's benign conversations; other-family rows only train it (firing on another scam is not a false alarm). No TEST data trains or tunes it.",
+      "PreyNet TRAIN (never VAL/TEST) is augmented: each conversation again after 1-3 opening turns of another benign TRAIN conversation (MODEL_SPEC \u00a74.3). The splice draw is fixed (seed 0), so seed stds exclude its variance.",
       "regression_test: TEST split without job_task (base families + benign). The chloroplast's 1% cap is on held-out synthetic negatives, not TEST: compare fpr with vs without before claiming the chloroplast adds no false alarms. base vs chloroplast EWR is NOT at matched FPR.",
       "*_ewr_at_3_std: sample std over the 3 seeds; the proxy test split is fixed across seeds.",
       "sample_efficiency: null where fewer synthetic positives exist than N.",
@@ -527,6 +528,8 @@
   },
   "reliability": {
     "bins": [
+      0.23333333333333334,
+      0.3,
       0.36666666666666664,
       0.43333333333333335,
       0.5,
@@ -539,40 +542,46 @@
       0.9666666666666667
     ],
     "acc": [
-      0.3333333333333333,
-      0.4444444444444444,
-      0.48936170212765956,
-      0.5,
-      0.49056603773584906,
-      0.6428571428571429,
-      0.6891891891891891,
-      0.8514851485148515,
-      0.8666666666666667,
-      0.9678714859437751
+      0.0,
+      0.0,
+      0.3076923076923077,
+      0.41935483870967744,
+      0.5333333333333333,
+      0.5869565217391305,
+      0.7884615384615384,
+      0.6811594202898551,
+      0.7741935483870968,
+      0.8357142857142857,
+      0.8938775510204081,
+      0.9825819672131147
     ],
     "conf": [
-      0.37613654633363086,
-      0.441220685839653,
-      0.5059781416933588,
-      0.5681593327418618,
-      0.6397288970227512,
-      0.7027169402156558,
-      0.7704362772606514,
-      0.8349559844130336,
-      0.9062642176946004,
-      0.9822997273211498
+      0.2545717656612396,
+      0.3104100525379181,
+      0.3695900784089015,
+      0.43411807283278436,
+      0.5043591168191698,
+      0.567476802546045,
+      0.6322160214185715,
+      0.7012385561846305,
+      0.7685653676268875,
+      0.8363151580095292,
+      0.9040159911525493,
+      0.9758847087743829
     ],
     "count": [
-      6,
-      18,
-      47,
+      1,
+      1,
+      13,
+      31,
+      45,
       46,
-      53,
-      28,
-      74,
-      101,
-      180,
-      1245
+      52,
+      69,
+      93,
+      140,
+      245,
+      976
     ]
   }
 }

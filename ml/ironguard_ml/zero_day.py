@@ -37,6 +37,7 @@ from ironguard_ml.train import (
     SEEDS,
     calibrated_val_rows,
     encode,
+    encode_train,
     fit,
     predict,
     risks,
@@ -60,7 +61,12 @@ NOTES = (
      "(p >= its threshold), matching infer.py where a fired chloroplast locks."),
     ("Chloroplast negatives: the synthetic hard negatives + whole LOFO-TRAIN conversations "
      "(~1,000 benign and ~500 other-family prefixes). Its threshold is the larger of the 1%-FPR "
-     "thresholds on a held-out 20% of each; no TEST data trains or tunes it."),
+     "thresholds on a held-out 20% of the hard negatives and of the bank's benign conversations; "
+     "other-family rows only train it (firing on another scam is not a false alarm). No TEST "
+     "data trains or tunes it."),
+    ("PreyNet TRAIN (never VAL/TEST) is augmented: each conversation again after 1-3 opening "
+     "turns of another benign TRAIN conversation (MODEL_SPEC §4.3). The splice draw is fixed "
+     "(seed 0), so seed stds exclude its variance."),
     ("regression_test: TEST split without job_task (base families + benign). The chloroplast's "
      "1% cap is on held-out synthetic negatives, not TEST: compare fpr with vs without before "
      "claiming the chloroplast adds no false alarms. base vs chloroplast EWR is NOT at matched "
@@ -177,7 +183,7 @@ def run_lofo(splits: dict, v1_records: dict[str, dict], encoder=None, zd_dir: Pa
               f"{len(data['test'])} {FAMILY} test conversations")
         return None
     base_splits = exclude_held_out(splits, FAMILY)
-    enc = {"train": encode(base_splits["train"], vectors), "val": encode(base_splits["val"], vectors),
+    enc = {"train": encode_train(base_splits["train"], vectors), "val": encode(base_splits["val"], vectors),
            "zd_test": encode(data["test"], vectors),
            "others": encode([c for c in splits["test"] if c.family != FAMILY], vectors)}
     runs = [_seed_run(data, enc, seed, cache_dir, encoder) for seed in SEEDS]
