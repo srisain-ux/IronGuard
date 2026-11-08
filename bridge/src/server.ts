@@ -35,6 +35,7 @@ export type WebhookTransport = {
 export function echoHandler(
   sendFailed: () => void = () => {},
   replyAccepted: () => void = () => {},
+  onAccepted: (message: EchoMessage) => void = () => {},
 ) {
   const seen = new Map<string, number>();
   return async (space: EchoSpace, message: EchoMessage) => {
@@ -53,6 +54,7 @@ export function echoHandler(
     if (seen.has(digest)) return;
     if (seen.size >= 1000) seen.delete(seen.keys().next().value!);
     seen.set(digest, now);
+    try { onAccepted(message); } catch { /* The optional feed cannot interrupt replies. */ }
     try {
       await space.send(
         text(
