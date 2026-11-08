@@ -2,7 +2,7 @@
 # Targets for code that doesn't exist yet are part of the plan; each owner makes theirs work in P0.
 SHELL := /bin/bash
 UV := $(shell command -v uv 2>/dev/null || echo $(HOME)/.local/bin/uv)
-.PHONY: doctor algae sync validate check-ml check-api check-web check-bridge smoke api api-stub web bridge tunnel train eval export setup-a setup-b setup-c
+.PHONY: doctor algae brev-tunnel nemotron-check sync validate check-ml check-api check-web check-bridge smoke api api-stub web bridge tunnel train eval export setup-a setup-b setup-c
 
 doctor:              ## is THIS laptop ready? prints ✅/❌ with fixes
 	@./scripts/doctor.sh
@@ -48,7 +48,12 @@ smoke:               ## must pass before every PR and at every merge window
 	@if [ -f web/package.json ]; then cd web && pnpm -s tsc --noEmit; else echo "web typecheck pending: member C package not present"; fi
 	@if [ -f bridge/package.json ]; then cd bridge && pnpm -s tsc --noEmit; else echo "bridge typecheck pending: member C package not present"; fi
 
-# ---------- Nemotron data (B only; reads NVIDIA_API_KEY from api/.env) ----------
+# ---------- Nemotron (B only; settings come from api/.env) ----------
+BREV_INSTANCE ?= ironguard-nemotron
+brev-tunnel:         ## keep running in its own Terminal tab: Brev GPU port 8000 → this laptop's port 8001
+	brev port-forward $(BREV_INSTANCE) --port 8001:8000
+nemotron-check:      ## one tiny Nemotron call to prove the connection works (Brev or build.nvidia.com)
+	python3 scripts/run_api.py python ../scripts/nemotron_check.py
 algae:
 	python3 scripts/run_api.py python -m ironguard_api.agent.algae --version v1 --per-family 150
 

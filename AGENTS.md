@@ -77,7 +77,9 @@ progress/           one progress log per member (no shared progress file = no co
 | `make smoke` | Starts api (stub model if artifacts are missing), hits every endpoint, type-checks web and bridge |
 | `make api` / `make api-stub` | Runs the API with the real model / the stub model |
 | `make web` / `make bridge` / `make tunnel` | Run the web app / Photon bridge / cloudflared tunnel to the bridge |
-| `make algae` | B only: run the Nemotron data factory (reads `NVIDIA_API_KEY` from `api/.env`) |
+| `make brev-tunnel` | B only: connect this laptop to Nemotron on the Brev GPU (keep it running in its own tab) |
+| `make nemotron-check` | B only: one tiny Nemotron call to prove the connection works |
+| `make algae` | B only: run the Nemotron data factory (settings from `api/.env`) |
 | `make train` / `make eval` / `make export` | A only: train PreyNet, write `eval_summary.json`, export ONNX |
 
 ## 7. Git workflow for agents (T3 Code / Claude Code / Codex)

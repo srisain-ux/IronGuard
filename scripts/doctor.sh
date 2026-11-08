@@ -37,8 +37,24 @@ if [ "$member" = "A" ] || [ "$member" = "B" ]; then
 fi
 
 if [ "$member" = "B" ]; then
-  if grep -qE '^NVIDIA_API_KEY=nvapi-[A-Za-z0-9_-]{20,}' api/.env 2>/dev/null; then ok "NVIDIA key is in api/.env"
-  else bad "NVIDIA key missing from api/.env" "build.nvidia.com → sign in → open nemotron-3-nano-30b-a3b → Get API Key; then: cp .env.example api/.env and paste the key after NVIDIA_API_KEY="; fi
+  base="$(grep -E '^NEMOTRON_BASE_URL=' api/.env 2>/dev/null | cut -d= -f2-)"
+  key="$(grep -E '^NVIDIA_API_KEY=' api/.env 2>/dev/null | cut -d= -f2-)"
+  if [ ! -f api/.env ]; then
+    bad "api/.env missing" "cp .env.example api/.env   then follow 'ss only: Nemotron on Brev' in docs/PROMPTS.md"
+  elif echo "$base" | grep -q "localhost:8001"; then
+    has brev && ok "Brev CLI" || bad "Brev CLI missing" "ask Claude to install it, or: brew install brevdev/homebrew-brev/brev"
+    if [ -z "$key" ] || [ "$key" = "the-password-you-gave-brev_serve.sh" ]; then
+      bad "NVIDIA_API_KEY in api/.env is still the placeholder" "set it to the password you passed to brev_serve.sh on the Brev machine"
+    elif curl -fs -m 5 -H "Authorization: Bearer $key" "$base/models" >/dev/null 2>&1; then
+      ok "Nemotron on Brev is reachable at $base"
+    else
+      bad "Nemotron on Brev not reachable at $base" "open a new Terminal tab in IronGuard and run: make brev-tunnel   (and check the Brev machine said NEMOTRON IS READY)"
+    fi
+  elif echo "$key" | grep -qE '^nvapi-[A-Za-z0-9_-]{20,}'; then
+    ok "build.nvidia.com key is in api/.env"
+  else
+    bad "Nemotron not configured in api/.env" "follow 'ss only: Nemotron on Brev' in docs/PROMPTS.md (or paste a build.nvidia.com nvapi- key)"
+  fi
   has cloudflared && ok "cloudflared (needed on the demo laptop)" || bad "cloudflared missing" "brew install cloudflared   (or download from https://github.com/cloudflare/cloudflared/releases)"
 fi
 

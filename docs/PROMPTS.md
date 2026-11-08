@@ -55,17 +55,48 @@ Common fixes:
 - **codex missing:** run `npm i -g @openai/codex`, then `codex login`.
 - **cloudflared missing (ss, jcubed):** run `brew install cloudflared`. If `brew` isn't found, download it from https://github.com/cloudflare/cloudflared/releases.
 
-### ss only: connect Nemotron (the AI that makes our training data)
-1. Go to **https://build.nvidia.com** and sign in (make a free account if needed).
-2. Search for **nemotron-3-nano-30b-a3b**, open it, and click **Get API Key**. Copy the key (it starts with `nvapi-`).
-3. In Terminal:
-   ```bash
-   cp .env.example api/.env && open -e api/.env
-   ```
-4. A text window opens. Find the line `NVIDIA_API_KEY=nvapi-xxxxxxxx` and replace `nvapi-xxxxxxxx` with your key. Save and close.
-5. Run `make doctor`. The NVIDIA line should now be ✅.
+### ss only: run Nemotron on NVIDIA Brev (our $60 credits) · about 20 min, mostly waiting
+Nemotron is the AI that writes our training data and runs the Safeguard agent. We run it on our own rented NVIDIA GPU on Brev, so there are no per-call limits.
 
-> Never paste the key into a chat or a commit. `api/.env` is ignored by git on purpose.
+**Part 1: rent the GPU (on brev.nvidia.com)**
+1. Go to **https://brev.nvidia.com** and sign in. Check that your **$60 credit** shows in your account/billing page.
+2. Click **Create** (or **New Instance**). Choose **GPU** and pick one of these, whichever is available and cheapest:
+   **L40S (48 GB)**, **A100 (80 GB)** or **H100 (80 GB)**. Look at the **price per hour** and pick one **under about $3.50/hour**, so $60 lasts until judging ends at 4 PM.
+3. Keep the default machine image (a VM with Docker), set disk to **200 GB** if there's a disk option, and name the instance exactly **`ironguard-nemotron`**.
+4. Click **Deploy** / **Create** and wait until it says **Running** (a few minutes).
+
+**Part 2: start Nemotron (in the Brev machine's terminal)**
+5. On the instance's page, open its terminal: click **Open Terminal** / **Shell** / **Jupyter → Terminal** (whichever you see).
+6. Make up a password (letters and numbers only, e.g. `ironguard7342`). Paste this into the Brev terminal, replacing `YOURPASSWORD`, and press Enter:
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/srisain-ux/IronGuard/main/scripts/brev_serve.sh | bash -s YOURPASSWORD
+   ```
+7. Wait. The first time, it downloads the model (5–15 minutes). It's done when it prints **✅ NEMOTRON IS READY**.
+
+**Part 3: connect your laptop (in Terminal on your laptop, inside `IronGuard`)**
+8. Log in to Brev once (a browser window opens; approve it):
+   ```bash
+   brev login
+   ```
+9. Open a **new Terminal tab** in the `IronGuard` folder and run this. **Leave this tab open the whole night**, because it's the cable between your laptop and the GPU:
+   ```bash
+   make brev-tunnel
+   ```
+10. In your first Terminal tab:
+    ```bash
+    cp .env.example api/.env && open -e api/.env
+    ```
+    In the window that opens, change `NVIDIA_API_KEY=the-password-you-gave-brev_serve.sh` to `NVIDIA_API_KEY=YOURPASSWORD` (the same password as step 6). Leave the other lines alone. Save and close.
+11. Test it:
+    ```bash
+    make nemotron-check && make doctor
+    ```
+    You should see **✅ Nemotron answered** and the doctor's Nemotron line in ✅.
+
+> **Keep it running until judging ends (4 PM)**, then **stop the instance on brev.nvidia.com** so it stops using credits.
+> **If your laptop sleeps or the tunnel tab closes:** run `make brev-tunnel` again in a new tab.
+> **Backup if Brev has no GPUs available:** use NVIDIA's hosted API instead. Get a free `nvapi-` key at https://build.nvidia.com (open *nemotron-3-nano-30b-a3b* → **Get API Key**), then in `api/.env` use the 4 "OPTION B" lines from `.env.example`.
+> Never paste the password or keys into a chat or a commit. `api/.env` is ignored by git on purpose.
 
 ### jcubed only: connect Photon (our real iMessage/SMS number)
 1. Go to **https://photon.codes/beta**, sign up, open the **dashboard**, create a project called `IronGuard`, and add the **iMessage** and **SMS** channels.
@@ -205,14 +236,16 @@ and a first ironguard_ml/metrics.py + evaluate.py that write ml/artifacts/eval_s
 
 ### B1 · new worktree `b/algae` · Claude Code · Sonnet 5.5 · high
 ```text
-FIRST: run `make doctor`. If the NVIDIA line is ❌, STOP and give me the fix steps in simple words. Don't write code until it's ✅.
+FIRST: run `make doctor` and `make nemotron-check`. If either fails, STOP and walk me through the fix in simple words (usually: start
+`make brev-tunnel` in its own Terminal tab, or fix api/.env per 'ss only: run Nemotron on NVIDIA Brev'). Don't write code until both pass.
 /ecc:plan "Algae synthetic data factory per docs/MODEL_SPEC.md §3 and §9"
 After I approve: implement api/ironguard_api/agent/nemotron.py (OpenAI-compatible client; base URL NEMOTRON_BASE_URL, key NVIDIA_API_KEY, both
 read from the environment, which scripts/run_api.py loads from api/.env; retries with exponential backoff on 429/5xx; 60 s timeout; strict JSON
-extraction with one repair retry). Make ONE test call and show me the reply. If the model ID is wrong, look up the right one on
-build.nvidia.com and update NEMOTRON_GEN_MODEL / NEMOTRON_AGENT_MODEL in .env.example and tell me what to change in my api/.env.
+extraction with one repair retry). The server is vLLM on Brev serving model name "nemotron" (or build.nvidia.com as a backup); the model
+may return its reasoning separately, so read only message.content. For bulk generation, try extra_body={"chat_template_kwargs":
+{"enable_thinking": False}} and keep it only if the replies still come back as valid JSON. Make ONE test call and show me the reply.
 Then implement agent/algae.py as a module runnable with `make algae` (python -m ironguard_api.agent.algae --version v1 --per-family 150).
-Steps: sample diversity knobs → batches of 5 conversations (NEMOTRON_GEN_MODEL, temp 0.9) with asyncio.Semaphore(8) → critic pass
+Steps: sample diversity knobs → batches of 5 conversations (NEMOTRON_GEN_MODEL, temp 0.9) with asyncio.Semaphore(12) → critic pass
 (NEMOTRON_AGENT_MODEL, temp 0.2; drop realism < 4 or wrong labels) → dedupe → validate each line against conversation.schema.json →
 append to data/generated/v1/<family>.jsonl IMMEDIATELY after each batch (crash-safe). Benign: 900 total, ≥40% hard negatives, same prompt skeleton.
 Start `make algae` in the background as soon as it works and show me the progress. When ≥300 valid conversations exist, do an EXPRESS DROP:
@@ -411,7 +444,8 @@ Tag the release: git switch main && git pull && git tag v1.0-hackutd && git push
 1. **jcubed (10:30–11:00):** record the demo video (under 3 minutes) following `docs/pitch/shot-list.md`. Upload it to YouTube as **Unlisted** and copy the link.
 2. **ss (by 11:30):** on Devpost, open the IronGuard project → fill in each section from `docs/pitch/devpost-copy.md` and `progress/B.md` → add the video link and `https://github.com/srisain-ux/IronGuard` → select the tracks (T-Mobile Safe Signal, NVIDIA Nemotron, Photon) → **Submit**. Check that all 3 teammates are listed.
 3. **Everyone (11:00–11:45):** one full timed rehearsal of the 3-minute demo, then test the Photon number one last time from a phone.
-4. **Judging is 1–4 PM.** Demo from ss's laptop. Keep the video on 2 laptops as a backup.
+4. **Judging is 1–4 PM.** Demo from ss's laptop, with `make brev-tunnel` running in its own tab. Keep the video on 2 laptops as a backup.
+5. **After judging (ss):** go to brev.nvidia.com → your `ironguard-nemotron` instance → **Stop** (or **Delete**) so it stops using credits.
 
 ---
 
@@ -427,6 +461,9 @@ Tag the release: git switch main && git pull && git tag v1.0-hackutd && git push
 | `make sync` isn't green | Paste §S again; it tells you whose part failed. That person fixes it within 10 minutes, otherwise ss reverts that PR. |
 | The agent is slow or confused | Paste §R and continue in a fresh thread. |
 | Claude usage limit hit | Switch that thread to Codex GPT-6 Sol high and paste §R's resume prompt. |
+| `make nemotron-check` says connection error | Your `make brev-tunnel` tab closed or the laptop slept. Run `make brev-tunnel` again in a new tab. |
+| Brev machine says the server stopped | In the Brev terminal run `docker logs --tail 40 nemotron` and paste it into §H. Re-run the step 6 command to restart. |
+| No Brev GPUs available | Use the build.nvidia.com backup (see the Brev section's backup note). |
 | Nemotron is slow or errors (429) | Tell B1: "Lower the concurrency to 4 and keep the batches you already saved." |
 
 # ⏳ If you're running late (cut in this order, never cut the model)
