@@ -3,6 +3,7 @@ import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContai
 import { getChloroplasts, getMetrics, openEvents, submitZeroDay, useMocks, type EvalSummary } from "../api/client";
 import { compileChloroplast } from "../runtime/chloroplast";
 import type { Event } from "../contracts/event";
+import { pitchMetrics } from "../api/metrics";
 
 const colors: Record<string, string> = { PreyNet: "#e83f8f", B0: "#3fc1c0", B1: "#b9a2cf", B2: "#544ea5", B3: "#83d8d7" };
 const pct = (value: number | null | undefined) => typeof value === "number" && Number.isFinite(value) ? `${(value * 100).toFixed(0)}%` : "--";
@@ -74,7 +75,7 @@ export default function ReefPage() {
 
   useEffect(() => {
     let active = true;
-    void getMetrics().then(value => { if (active) setMetrics(value); }).catch(() => { if (active) setMetrics(null); });
+    void getMetrics().then(value => { if (active) setMetrics(pitchMetrics(value)); }).catch(() => { if (active) setMetrics(null); });
     const stream = openEvents(event => {
       const eventKey = `${event.type}:${event.ts}:${event.job_id ?? ""}:${JSON.stringify(event.data)}`;
       if (seenEvents.current.has(eventKey)) return;

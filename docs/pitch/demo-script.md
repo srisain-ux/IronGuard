@@ -2,6 +2,8 @@
 
 Follow `docs/PLAYBOOK.md` §10 in order. Use a real Photon number and a consenting judge's test phone for the forward flow. Have the browser open to `/phone`, a second browser tab at `/reef`, and the local DevTools Network panel ready. If the API or Photon connection is unavailable, say so and use the labeled browser demonstration; do not present a fixture as a live run.
 
+Warm up the real browser model while online before the demo. First use downloads MiniLM from Hugging Face; only inference is local. An already-loaded page can score offline, but a fresh offline launch is not supported. Do not present the reported Photon step-2 miss or strike-only pig-butchering warning as successful advance detection; A must resolve and revalidate those cases before claiming that demo works.
+
 ## 0:00–0:20 · The gap
 
 **Screen:** `/phone`, incident chooser visible.

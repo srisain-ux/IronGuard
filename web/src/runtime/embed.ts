@@ -10,7 +10,7 @@ export function roleText(turn: Turn): string {
 }
 export async function embedTurns(turns: Turn[], onStatus?: (status: string) => void): Promise<Float32Array[]> {
   if (!encoder) {
-    onStatus?.("Hatching dragonfly…");
+    onStatus?.("Loading MiniLM… First use requires an internet download of model assets. Message text stays on this device.");
     encoder = (async () => {
       const { pipeline, env } = await import("@huggingface/transformers");
       env.allowLocalModels = false;

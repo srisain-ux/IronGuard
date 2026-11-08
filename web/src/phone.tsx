@@ -169,7 +169,7 @@ export function Phone() {
     setRuntimeStatus("Hatching dragonfly…");
     void scoreLocal(demo.conversation.turns.slice(0, count), manifests, status => { if (active) setRuntimeStatus(status); })
       .then(result => { if (active) { setLiveScores({ id: demo.id, scores: result }); setRuntimeStatus("ON-DEVICE FORECAST"); } })
-      .catch(() => { if (active) setRuntimeStatus("Browser model unavailable. Install A’s exported artifacts and retry. No text was uploaded."); });
+      .catch(() => { if (active) setRuntimeStatus("Browser model unavailable. First use needs internet for MiniLM and installed PreyNet artifacts. No text was uploaded."); });
     return () => { active = false; };
   }, [demo, count, manifests]);
   const prime = score
@@ -334,6 +334,7 @@ export function Phone() {
                 These scripts run entirely in your browser. No text is uploaded.
                 No customer data trains a model.
               </p>
+              {!useMocks && <p>First use downloads MiniLM model assets from Hugging Face and requires internet. Local scoring can work offline after assets load; a fresh offline launch is not supported.</p>}
             </div>
           </div>
           <LocalMessage manifests={manifests} />

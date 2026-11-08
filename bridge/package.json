@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --env-file=.env --import tsx src/index.ts",
-    "start": "node --env-file=.env --import tsx src/index.ts",
+    "dev": "node --import tsx src/start.ts",
+    "start": "node --import tsx src/start.ts",
     "lint": "tsc --noEmit",
     "test": "node --import tsx --test src/*.test.ts"
   },
