@@ -101,3 +101,23 @@
 ## M2 · Post-merge sync
 - [05:23][P2] **Done:** confirmed member A and clean checkout; switched to a/main, pulled origin/main with rebase (fast-forward to 8dfcbbb), and pushed with the requested force-with-lease. Only a/main and its single worktree remain, so no worktree branches needed rebasing and no conflicts occurred. `make sync` passed: dependency installation, contract validation (15 schemas, 16 examples), API smoke (3 tests), and web/bridge typechecks. `make check-ml` passed (ruff, 121 tests passed, 1 skipped).
 - **Skipped:** code fixes and PR creation (all checks green); B-only shared gate/phase updates do not apply. **Unverified:** the optional real-encoder test remains skipped; this sync uses stub API smoke and does not establish real-model integration, ONNX/browser parity, or model quality on the newly merged generated data.
+
+## A3 · Chloroplast, LOFO, ONNX export (`a/chloroplast`)
+- [05:45][P3] **Done (part 1, ONNX):** `ml/ironguard_ml/export.py` (`make export`) and `ml/tests/test_onnx_parity.py`. Opset 17, legacy TorchScript exporter (`dynamo=False`; `onnxscript` isn't needed). Parity over 50 random prefixes (lengths 1–12): shipped weights max abs diff **1.1e-5** (limit 1e-4); a random-init export is checked too. Fixed one bug: `torch.onnx.export` restores the wrapper's mode afterwards, so the wrapper must be built `.eval()`, or dropout comes back on in the caller's net (regression test added). `make validate` and `make check-ml` pass (123 passed, 1 skipped). **Express drop:** `ml/artifacts/preynet.onnx` (774 KB).
+- **Unverified:** browser (onnxruntime-web) execution and the MiniLM embedding parity between Python and transformers.js (§4.1) are still not checked.
+
+## Handoffs (A3): for jcubed (browser ONNX)
+- **File:** `ml/artifacts/preynet.onnx` (opset 17, 774 KB, fp32). Same weights as `preynet.pt` (version `0.1.0-v1-s2`).
+- **Input:** `turn_vecs`, float32 `[batch, turns, 385]`, both axes dynamic. Use batch 1, every row a real turn (no padding), **left-truncate to the last 12 turns**. Per turn: `[MiniLM(role_text) (384, mean-pooled, L2-normalized), is_them (1.0 for "them", 0.0 for "me")]`, where `role_text = "[THEM] " + text` or `"[ME] " + text` (exact prefix, one space). Encoder: `Xenova/all-MiniLM-L6-v2`, `pooling: "mean", normalize: true`.
+- **Outputs** (all for the LAST turn of the input):
+  - `family_logits` `[batch, 7]`, order `benign, pig_butchering, bank_impersonation, family_emergency, job_task, toll_delivery, carrier_support`
+  - `stage_logits` `[batch, 5]`, order `benign, bait, pivot, hook, strike` (this is the NEXT stage forecast)
+  - `tts_logits` `[batch, 5]`, order `0, 1, 2, 3+, none` (turns to strike)
+  - `attention` `[batch, turns]` sums to 1 over the input turns (turns dropped by truncation get 0 in the UI)
+  - `features` `[batch, 640]`: the chloroplast input
+- **Calibration** (`ml/artifacts/temperature.json`): `{"family": T_f, "next_stage": T_s, "tts": T_t, "theta_lock": θ}`. Probabilities = `softmax(logits / T)` per head. `risk = 1 − P_family(benign)`.
+- **Per message:** run the model once on turns `[0..k]` after each new turn k (keep the per-turn risks; the lock needs history).
+- **Lock-on (§4.6):** lock when `risk ≥ theta_lock` (**use the file value, currently 0.986, not 0.70**). Once locked, release only after **2 consecutive "them" turns** with `risk < 0.40`. "me" turns never change the counter. A fired chloroplast also locks.
+- **Confidence band (§4.5):** `high` if risk ≥ 0.80 or ≤ 0.10; else `uncertain` if top family p < 0.5 or 0.35 ≤ risk < 0.80; else `low`.
+- **Chloroplast (§5.2):** `p = sigmoid(W2·gelu(W1·f + b1) + b2)` with `f = features`, exact erf GELU. W1 `[hidden_dim × 640]` and W2 `[1 × hidden_dim]` are row-major, base64 float32 little-endian. Fired if `p ≥ manifest.threshold`; then risk = max(risk, p) and the family label comes from the chloroplast if `p` beats the base risk. Vitality is display-only.
+- Reference: `ml/ironguard_ml/infer.py` (`Model.score`, `lock_states`, `confidence_band`) matches this; the parity test is `ml/tests/test_onnx_parity.py`.
