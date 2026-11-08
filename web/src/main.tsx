@@ -1,34 +1,21 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Phone } from "./phone";
 import ReefPage from "./pages/ReefPage";
+import { BotanicalScene, SiteHeader, SiteFooter } from "./components/SiteChrome";
 import "./theme/zero-day.css";
 import "./style.css";
 import "./reef.css";
 
 function ReefRoute() {
   return (
-    <main className="app-shell zd-scanlines reef-shell">
-      <div className="zd-grid-floor" aria-hidden="true" />
-      <header className="site-header">
-        <Link
-          to="/phone"
-          className="wordmark zd-neon-sign"
-          aria-label="IronGuard home"
-        >
-          IRONGUARD
-        </Link>
-        <nav aria-label="Main navigation">
-          <Link className="reef-nav" to="/phone">
-            PHONE
-          </Link>
-          <Link className="reef-nav" to="/reef" aria-current="page">
-            REEF LAB
-          </Link>
-        </nav>
-      </header>
+    <main className="app-shell reef-shell">
+      <BotanicalScene reef />
+      <a className="skip" href="#reef-content">Skip to Reef Lab</a>
+      <SiteHeader page="reef" />
       <ReefPage />
+      <SiteFooter />
     </main>
   );
 }

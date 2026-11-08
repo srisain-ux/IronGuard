@@ -1,3 +1,5 @@
 /public/models/*
 /public/ort/
 /public/transformers/
+/.design-reference/
+/.qa/
