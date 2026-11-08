@@ -36,6 +36,7 @@ from ironguard_ml.train import (
     best_of,
     calibrated_val_rows,
     encode,
+    encode_train,
     fit,
     load_splits,
     per_conversation,
@@ -112,7 +113,8 @@ def _aggregate(fits: list[FitResult], runs: list[dict]) -> dict:
 
 def evaluate_preynet(splits: dict, vectors=turn_vectors) -> tuple[dict, dict]:
     """(model entries for PreyNet + ablations, reliability bins of the shipped seed)."""
-    data = {name: encode(splits[name], vectors) for name in ("train", "val", "test")}
+    data = {name: encode(splits[name], vectors) for name in ("val", "test")}
+    data["train"] = encode_train(splits["train"], vectors)
     if splits["test_human"]:
         data["test_human"] = encode(splits["test_human"], vectors)
     models, shipped = {}, None

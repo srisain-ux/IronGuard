@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 import torch
 
+from ironguard_ml import chloroplast
 from ironguard_ml.chloroplast import (
     STEPS,
     Base,
@@ -86,6 +87,21 @@ def test_learns_the_tell_and_reference_apply_agrees(base):
     assert p[groups == 0][-1] >= m["threshold"] > p[groups == 1].max()  # fires on the deposit turn
 
 
+def test_other_family_scams_never_set_the_cap(monkeypatch, base):
+    """Firing on another scam family is a correct scam alert, not a false alarm (a parking-boot
+    adapter may fire on toll scams), so only benign negatives may set the 1% cap."""
+    def key(rows):
+        return {tuple(np.round(r[:8], 4)) for r in rows}
+
+    hard, _ = conversation_features(base.net, [_parse(r, "n") for r in NEG], fake_encoder)
+    benign = key(base.bank[base.bank_benign]) | key(hard)
+    assert not base.bank_benign.all()  # the fixture bank also holds pig_butchering rows
+    monkeypatch.setattr(chloroplast, "_probs", lambda _, f: np.array(
+        [0.1 if tuple(np.round(r[:8], 4)) in benign else 0.9 for r in f], np.float32))
+    m = train(POS, NEG, "zd_task", "Task", "alert", base=base)
+    assert m["threshold"] < 0.9 and m["metrics"]["val_recall_at_1fpr"] == 1.0
+
+
 def test_same_seed_same_weights(base):
     args = (POS, NEG, "zd_task", "Task", "alert")
     assert train(*args, base=base)["sha256"] == train(*args, base=base)["sha256"]
@@ -122,7 +138,7 @@ def test_load_base_refuses_missing_or_stale_bank(tmp_path, base):
                tmp_path / "preynet.pt")
     with pytest.raises(FileNotFoundError):
         load_base(tmp_path)
-    save_bank(tmp_path, base.bank, base.bank_groups)
+    save_bank(tmp_path, base.bank, base.bank_groups, base.bank_benign)
     assert load_base(tmp_path).bank.shape == base.bank.shape
     load_base.cache_clear()
     (tmp_path / "preynet.pt").write_bytes(b"other weights")
@@ -133,7 +149,7 @@ def test_load_base_refuses_missing_or_stale_bank(tmp_path, base):
 def test_bank_keeps_whole_conversations_and_excludes_callers_negatives(base):
     other = [_parse(record(i, "pig_butchering", [f"a {i}", "b", "c", "d"]), "o") for i in range(200)]
     benign = [_parse(record(i, "benign", [f"x {i}", "y"]), "b") for i in range(3)]
-    _, groups = build_negative_bank(base.net, benign + other, fake_encoder, cache_dir=None,
+    _, groups, _ = build_negative_bank(base.net, benign + other, fake_encoder, cache_dir=None,
                                            exclude_ids=frozenset({"benign_0", "benign_1"}))
     sizes = np.bincount(groups)
     assert sizes[0] == 2  # only benign_2 is left, with both of its prefixes

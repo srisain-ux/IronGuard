@@ -2,7 +2,7 @@
 
 `make train` trains seeds 0/1/2, ships the best VAL EWR@2 seed to artifacts/preynet.pt and
 writes VAL-fitted temperatures plus the VAL-tuned θ_lock to artifacts/temperature.json.
-TEST is never read here.
+TEST is never read here. TRAIN (only) is augmented by `encode_train`'s benign-opener splice.
 """
 
 import argparse
@@ -37,6 +37,8 @@ SEEDS = (0, 1, 2)
 LR, WEIGHT_DECAY, BATCH_SIZE, MAX_EPOCHS, PATIENCE = 2e-3, 1e-4, 64, 20, 5
 AUX_WEIGHT = 0.5  # next_stage and tts loss weights (§4.4)
 EARLY_STOP_K = 2
+SPLICE_MAX_OPENER = 3  # benign turns spliced in front of each TRAIN conversation (encode_train)
+SPLICE_SEED = 0
 BENIGN = FAMILIES.index("benign")
 VERSION = "0.1.0"
 
@@ -56,7 +58,8 @@ VARIANTS = {
 
 @dataclass(frozen=True)
 class PrefixData:
-    """Every prefix of every conversation, in conversation order then k = 1..n."""
+    """Every prefix of every conversation, in conversation order then k = 1..n (encode_train
+    appends spliced rows after them; `conversations` still lists only the originals)."""
 
     conversations: tuple[Conversation, ...]
     x: torch.Tensor
@@ -67,16 +70,56 @@ class PrefixData:
     tts_mask: torch.Tensor  # early scam prefixes + benign ("none"); post-strike prefixes excluded
 
 
-def encode(conversations: Sequence[Conversation], vectors=turn_vectors) -> PrefixData:
-    seqs, family, stage, tts, tts_mask = [], [], [], [], []
-    for conv in conversations:
+def _rows(conversations: Sequence[Conversation], vectors, openers=None):
+    """(input, prefix) per prefix. With `openers`, only conversations that got a non-empty opener,
+    each read after its opener (openers[i] = benign turns spliced in front of conversation i)."""
+    for i, conv in enumerate(conversations):
+        opener = () if openers is None else openers[i]
+        if openers is not None and not opener:
+            continue
         turn_vecs = vectors(conv.turns)
+        if opener:
+            turn_vecs = np.concatenate([vectors(opener), turn_vecs])
         for p in make_prefixes(conv):
-            seqs.append(prefix_sequence(turn_vecs, p.k))
-            family.append(FAMILIES.index(p.family))
-            stage.append(STAGES.index(p.next_stage))
-            tts.append(TTS_BUCKETS.index(p.tts))
-            tts_mask.append(p.early or p.family == "benign")
+            yield prefix_sequence(turn_vecs, len(opener) + p.k), p
+
+
+def _openers(conversations: Sequence[Conversation]) -> list[tuple]:
+    """1-3 opening turns of another random benign conversation, per conversation (deterministic)."""
+    rng = np.random.default_rng(SPLICE_SEED)
+    benign = [c for c in conversations if c.family == "benign"]
+    openers = []
+    for conv in conversations:
+        pool = [c for c in benign if c is not conv]
+        if not pool:
+            openers.append(())
+            continue
+        donor = pool[rng.integers(len(pool))]
+        openers.append(donor.turns[:rng.integers(1, min(SPLICE_MAX_OPENER, len(donor.turns)) + 1)])
+    return openers
+
+
+def encode(conversations: Sequence[Conversation], vectors=turn_vectors) -> PrefixData:
+    return _pack(conversations, list(_rows(conversations, vectors)))
+
+
+def encode_train(conversations: Sequence[Conversation], vectors=turn_vectors) -> PrefixData:
+    """TRAIN only: every prefix, then every prefix again after a benign opener from another TRAIN
+    conversation, with the same labels. Synthetic scams look scammy from turn 1, so without this
+    the GRU learns that a harmless start means a harmless thread and ignores a later strike."""
+    rows = list(_rows(conversations, vectors))
+    rows += _rows(conversations, vectors, _openers(conversations))
+    return _pack(conversations, rows)
+
+
+def _pack(conversations: Sequence[Conversation], rows) -> PrefixData:
+    seqs, family, stage, tts, tts_mask = [], [], [], [], []
+    for seq, p in rows:
+        seqs.append(seq)
+        family.append(FAMILIES.index(p.family))
+        stage.append(STAGES.index(p.next_stage))
+        tts.append(TTS_BUCKETS.index(p.tts))
+        tts_mask.append(p.early or p.family == "benign")
     x, mask = pack(seqs)
     return PrefixData(tuple(conversations), x, mask, torch.tensor(family), torch.tensor(stage),
                       torch.tensor(tts), torch.tensor(tts_mask, dtype=torch.bool))
@@ -229,7 +272,7 @@ def main():
         splits, _, version = load_splits(args.data)
     except ValueError as exc:
         parser.error(str(exc))
-    train, val = encode(splits["train"]), encode(splits["val"])
+    train, val = encode_train(splits["train"]), encode(splits["val"])
     fits = []
     for seed in SEEDS:
         fits.append(fit(train, val, seed))
