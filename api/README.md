@@ -15,13 +15,19 @@ used automatically. `preynet` mode never falls back to fixtures.
 - `POST /v1/agent/safety-card`: `{score, entities, source?: "web" | "photon", text?}`.
   Web mode rejects text. This scaffold returns a demo card, preserves model risk,
   and makes no verification claims. Nemotron and agent tools are not connected.
-- `POST /v1/zero-day`: `{alert}` → 202 `{job_id, status: "demo", events_url}`.
-  Background work emits an honest `error` event; no training or adapter is claimed.
+- `POST /v1/zero-day`: `{alert, n_pos=120, n_neg=120}` (10-300 each) -> 202
+  `{job_id, status: "queued", events_url}`; 429 while 2 jobs run. The background job
+  (`agent/zero_day.py`) plans 8 mutation axes, generates positives + hard negatives,
+  critiques, dedupes, trains and saves `api/store/chloroplasts/<id>.json`. SSE:
+  `algae.progress {stage, done, total, sample?}`, `train.progress`, `chloroplast.ready`
+  (manifest without weights) or `error`. Trainer: `ironguard_ml.chloroplast.train`, or
+  the zero-weight `ironguard_ml.stub.train` (ids end in `_stub`) until A lands it.
+  Demo adapter: `python -m ironguard_api.agent.zero_day "<alert>" --family zd_parking_boot`.
 - `GET /v1/chloroplasts` and `GET /v1/chloroplasts/{id}` read validated manifests
   from `api/store/chloroplasts/*.json`. Stub mode falls back to the contract demo.
   Demo weights are placeholders; do not deploy them for inference.
 - `POST /v1/reef/report`: consented `reef_report` → 202 `{accepted: true}`.
-  Re-scrubs text and retains a bounded in-memory queue (1,000 reports). The regex
+  Re-scrubs text, appends to `api/store/reef.jsonl` (gitignored, stops at 5 MB) and keeps a bounded in-memory queue (1,000 reports). The regex
   scrubber includes a small demo name/brand list, not general PII recognition.
 - `GET /health`, `GET /v1/metrics`, `GET /models/preynet.onnx`: actual artifacts
   from `IRONGUARD_ARTIFACTS` (relative paths resolve from `api/`). Missing metrics

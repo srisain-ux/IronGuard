@@ -22,3 +22,5 @@ class SafetyRequest(BaseModel):
 class ZeroDayRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     alert: str = Field(min_length=1, max_length=400, pattern=r"\S")
+    n_pos: int = Field(default=120, ge=10, le=300)
+    n_neg: int = Field(default=120, ge=10, le=300)

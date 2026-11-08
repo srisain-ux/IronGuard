@@ -40,7 +40,8 @@ def extract_json(text: str) -> dict:
 
 async def chat_message(messages: list[dict], *, model: str, temperature: float, retries: int = 3,
                        top_p: float | None = None, max_tokens: int = 4096,
-                       thinking: bool = True, tools: list[dict] | None = None):
+                       thinking: bool = True, tools: list[dict] | None = None,
+                       timeout: float | None = None):
     """One completion message (content + tool_calls); exponential backoff on 429 / 5xx /
     connection errors / timeouts."""
     extra = {} if thinking else {"extra_body": NO_THINKING}
@@ -48,6 +49,8 @@ async def chat_message(messages: list[dict], *, model: str, temperature: float, 
         extra["top_p"] = top_p
     if tools:
         extra["tools"] = tools
+    if timeout:  # per call, so slow bulk jobs don't loosen the agent's 60 s default
+        extra["timeout"] = timeout
     last: Exception | None = None
     for attempt in range(retries + 1):
         try:
