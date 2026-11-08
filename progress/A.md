@@ -1,4 +1,4 @@
-# progress/A.md: Member A, Dragonfly (ML lead)
+# progress/A.md: Member A (double), Dragonfly (ML lead)
 
 > Only member A (and their agents) edits this file. Append; don't rewrite history.
 > Format for each entry: `[HH:MM][P<phase>] what changed | skipped | unverified`

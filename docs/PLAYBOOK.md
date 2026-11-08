@@ -63,13 +63,13 @@
 
 ## 4. Who does what
 
-### Member A: "Dragonfly" (ML lead) · Claude Code + Codex
+### Member A (double): "Dragonfly" (ML lead) · Claude Code + Codex
 **Owns the model, the thing the judges score most.** PreyNet, baselines, metrics, calibration, chloroplast trainer, ONNX export, eval charts' data, the seed and human test sets, and `MODEL_SPEC.md`. Writes the "How we trained it" section of the Devpost and presents that part of the pitch.
 
-### Member B: "Algae" (agents, API, integration lead) · Claude Code + Codex
+### Member B (ss): "Algae" (agents, API, integration lead) · Claude Code + Codex
 Contracts (already drafted in this kit), the FastAPI service, both Nemotron workflows (Algae factory, Safeguard agent + tools), the zero-day job, reef reports. **Runs every merge window and is the demo host.** Owns root files, scripts and CI.
 
-### Member C: "Leaf Sheep" (UI + Photon) · Codex
+### Member C (jcubed): "Leaf Sheep" (UI + Photon) · Codex
 The Zero Day phone UI and the Reef Lab, the on-device runtime (transformers.js + onnxruntime-web + chloroplast heads), the Photon bridge, the demo video, Devpost copy and screenshots.
 
 **Everyone, in idle minutes:** write 10 realistic conversations for `data/test_human/` (send them to A in a Request or a DM; A commits them). Human-written test data is our best defense against "your model only learned Nemotron's style".
