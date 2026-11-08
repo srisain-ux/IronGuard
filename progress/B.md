@@ -1,4 +1,4 @@
-# progress/B.md: Member B, Algae (agent, API, integration lead)
+# progress/B.md: Member B (ss), Algae (agent, API, integration lead)
 
 > Only member B (and their agents) edits this file. Append; don't rewrite history.
 > Format for each entry: `[HH:MM][P<phase>] what changed | skipped | unverified`
