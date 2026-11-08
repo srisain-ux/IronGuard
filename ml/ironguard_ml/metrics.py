@@ -5,6 +5,7 @@ Strike recall follows §6.2 literally: flag prefix <= strike_turn. With the
 Undefined denominators return None (JSON null), never fabricated zeros.
 """
 
+import itertools
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -74,6 +75,18 @@ def threshold_at_fpr(val: Sequence[ScoredConversation], target: float = 0.01) ->
         raise ValueError("threshold selection requires benign VAL conversations")
     allowed = math.floor(target * len(maxima))
     return math.nextafter(maxima[len(maxima) - allowed - 1], math.inf)
+
+
+def flicker_rate(warning_states: Sequence[Sequence[bool]]) -> float | None:
+    """Share of ever-warned conversations whose warning disappears and later reappears (§4.6).
+
+    One bool per prefix: the lock state with lock-on, or `risk >= θ_lock` without it.
+    """
+    def flickers(states: Sequence[bool]) -> bool:
+        changes = sum(bool(a) != bool(b) for a, b in itertools.pairwise(states))
+        return changes >= (2 if states[0] else 3)  # on→off→on needs an off gap between ons
+
+    return _mean([float(flickers(s)) for s in warning_states if any(s)])
 
 
 def summarize(rows: Sequence[ScoredConversation], threshold: float) -> dict:
