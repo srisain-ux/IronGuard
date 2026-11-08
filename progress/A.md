@@ -121,3 +121,8 @@
 - **Confidence band (§4.5):** `high` if risk ≥ 0.80 or ≤ 0.10; else `uncertain` if top family p < 0.5 or 0.35 ≤ risk < 0.80; else `low`.
 - **Chloroplast (§5.2):** `p = sigmoid(W2·gelu(W1·f + b1) + b2)` with `f = features`, exact erf GELU. W1 `[hidden_dim × 640]` and W2 `[1 × hidden_dim]` are row-major, base64 float32 little-endian. Fired if `p ≥ manifest.threshold`; then risk = max(risk, p) and the family label comes from the chloroplast if `p` beats the base risk. Vitality is display-only.
 - Reference: `ml/ironguard_ml/infer.py` (`Model.score`, `lock_states`, `confidence_band`) matches this; the parity test is `ml/tests/test_onnx_parity.py`.
+
+## Integration testing guidance · 2026-11-08
+- **Done:** inspected run targets, service READMEs, zero-day route, and browser mode handling to explain full-service testing. Confirmed this checkout still has a demo zero-day job and scripted phone inference; opening `/reef` alone cannot prove Step 3.
+- **Skipped:** starting services, network calls, code changes, and running checks; this task requested an explanation.
+- **Unverified:** real zero-day generation/training/publication, browser adapter inference/privacy, and live Photon round trip.
