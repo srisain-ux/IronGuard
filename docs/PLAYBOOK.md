@@ -39,7 +39,7 @@
 | Model | **PyTorch** PreyNet (GRU + attention), **sentence-transformers `all-MiniLM-L6-v2`** embeddings, scikit-learn baselines | Small, CPU-trainable in minutes, same embedder runs in the browser |
 | Model runtime (phone) | **transformers.js v3** (`Xenova/all-MiniLM-L6-v2`) + **onnxruntime-web** (PreyNet ONNX) + JS chloroplast heads | Real on-device inference, which is our privacy proof |
 | API | **FastAPI** + `sse-starlette`, Python 3.11, **uv** | One process hosts ML + agents; uv is fast with a lockfile per service |
-| LLM | **NVIDIA Nemotron** via build.nvidia.com (OpenAI-compatible, `integrate.api.nvidia.com/v1`): **Nemotron 3 Nano** (`nvidia/nemotron-3-nano-30b-a3b`) for bulk generation, **Nemotron 3 Super** for critic + tool calling (verify the ID on build.nvidia.com) | Nano is trained for tool calling and structured output and is fast; Super for harder agent steps |
+| LLM | **NVIDIA Nemotron 3 Nano, self-hosted on NVIDIA Brev** (our $60 hackathon credits) with vLLM (`scripts/brev_serve.sh`), reached through `make brev-tunnel` at `http://localhost:8001/v1` with the OpenAI-compatible API. Backup: build.nvidia.com's hosted API (just swap 4 lines in `api/.env`). | No per-call limits for bulk data generation, tool calling via vLLM, and a strong NVIDIA story: Nemotron generated our training data on NVIDIA GPUs |
 | Phone UI + Reef Lab | **Vite + React + TS + Tailwind**, recharts | Fast to scaffold; Codex is strong here |
 | Messaging | **Photon** via `spectrum-ts` (Node 20 + TS) | Required for the Photon track; the TS SDK means C owns it |
 | Realtime | SSE (`GET /v1/events`) | Simpler than websockets |
