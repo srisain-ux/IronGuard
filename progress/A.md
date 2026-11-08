@@ -222,3 +222,6 @@ Supporting values (all from the file): EWR@1..6 = 0.385, 0.486, 0.630, 0.680, 0.
 ## Handoffs (A5)
 - **Headline sentence update** (replaces A4's numbers): PreyNet warns **2.35 ± 0.12 turns** before the ask at a 1% false-alarm cap (TEST benign FPR 0.77%); per-message filters warn 0.47–0.59 (B2 0.47, B1 0.59). Zero-day minutes stay `--`.
 - @B: pull, then **restart the API** (`load_base` is cached and the bank format changed), then rerun the §10 step 4 parking-boot job and check that the manifest threshold is well below 0.9999.
+
+## Merge window M4 · 2026-11-08
+- **Done:** inventory: one worktree (the main folder) and local branches `a/main` and `main`. No A branch has commits missing from `a/main`; only B's and C's member branches do, and they go to `main` through their own PRs. `./scripts/merge-window.sh` (no branches to merge): already on `origin/main` (5ccf7ad), no conflicts, `make validate` and `make check-ml` (145 passed, 1 skipped) green; pushed `a/main` (1e192d5). | **Skipped:** worktree/branch removal (none merged). | **Unverified:** live Nemotron parking-boot job with the new chloroplast cap; Photon/browser runtime on the new weights.
