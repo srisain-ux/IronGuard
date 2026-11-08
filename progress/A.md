@@ -225,3 +225,6 @@ Supporting values (all from the file): EWR@1..6 = 0.385, 0.486, 0.630, 0.680, 0.
 
 ## Merge window M4 · 2026-11-08
 - **Done:** inventory: one worktree (the main folder) and local branches `a/main` and `main`. No A branch has commits missing from `a/main`; only B's and C's member branches do, and they go to `main` through their own PRs. `./scripts/merge-window.sh` (no branches to merge): already on `origin/main` (5ccf7ad), no conflicts, `make validate` and `make check-ml` (145 passed, 1 skipped) green; pushed `a/main` (1e192d5). | **Skipped:** worktree/branch removal (none merged). | **Unverified:** live Nemotron parking-boot job with the new chloroplast cap; Photon/browser runtime on the new weights.
+
+## Post-window sync · 2026-11-08
+- [07:12 CST][P4] **Done:** pulled merged origin/main into a/main (704dbea) and pushed with force-with-lease; fast-forward only. Inventoried worktrees and local A branches: only this checkout and a/main remain, so no worktree rebases were needed. `make sync` passed (dependency installs, 15 schemas/16 examples, 3 API smoke tests, web/bridge typechecks); `make check-ml` passed (145 passed, 1 skipped). | **Skipped:** fixes/PR (no failures); B's gate/phase update (member A). | **Unverified:** live Nemotron/Photon and browser inference; opt-in real-encoder test skipped.
