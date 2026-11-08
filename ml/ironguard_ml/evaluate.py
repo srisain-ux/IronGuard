@@ -2,7 +2,7 @@
 and thresholds, TEST reporting (§6.4).
 
 `make eval` works before v1 lands by falling back to the seed smoke fixture.
-Missing metrics are null; zero-day (LOFO) results are not produced here yet.
+Missing metrics are null. `zero_day` holds the job_task LOFO experiment (zero_day.py).
 """
 
 import argparse
@@ -17,7 +17,7 @@ import torch
 
 from ironguard_ml.baselines import Baseline
 from ironguard_ml.calibrate import ece, reliability, top_label
-from ironguard_ml.data import DATA_DIR, ROOT
+from ironguard_ml.data import DATA_DIR, ROOT, read_records
 from ironguard_ml.features import turn_vectors
 from ironguard_ml.infer import lock_states
 from ironguard_ml.metrics import (
@@ -44,6 +44,7 @@ from ironguard_ml.train import (
     scored,
     temperatures,
 )
+from ironguard_ml.zero_day import run_lofo
 
 NATIVE_THRESHOLD = 0.5  # B0 emits 0/1 rule hits
 AVERAGED = ("lead_time", "strike_recall", "hard_neg_fpr", "fpr", "ece_before", "ece_after",
@@ -224,9 +225,12 @@ def main():
                   ("flicker_rate: share of warned TEST conversations whose warning goes off and "
                   "back on (LockOn theta_lock/0.40/2 turns vs risk >= theta_lock without it)."),
                   "Lock-on is inference-only, so PreyNet without lock-on is flicker_rate_no_lock.",
-                  "zero_day (LOFO) is not evaluated yet."],
+                  "zero_day: LOFO for job_task (see zero_day.notes); null if data is too small."],
     }
-    result = evaluate(splits, dataset, with_preynet=True)
+    # load_splits may fall back to data/seed when v1 is missing: read records from the same place
+    v1_records = {r["id"]: r for r in read_records(data if version else DATA_DIR / "seed")}
+    result = {**evaluate(splits, dataset, with_preynet=True),
+              "zero_day": run_lofo(splits, v1_records)}
     schema = json.loads((ROOT / "contracts/schemas/metrics.schema.json").read_text())
     jsonschema.validate(result, schema)
     payload = json.dumps(result, indent=2, allow_nan=False) + "\n"

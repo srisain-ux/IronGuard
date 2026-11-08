@@ -92,8 +92,12 @@ def _decode(b64: str, count: int, name: str) -> np.ndarray:
     return np.frombuffer(raw, dtype="<f4").astype(np.float32)
 
 
-def chloroplast_probs(manifest: dict, features: torch.Tensor) -> torch.Tensor:
-    """p_new = sigmoid(W2·gelu(W1·f + b1) + b2) per prefix (§5.2 reference implementation)."""
+def apply_chloroplast(manifest: dict, features: torch.Tensor) -> torch.Tensor:
+    """§5.2 reference: p_new = sigmoid(W2·gelu(W1·f + b1) + b2) for each row of `features`.
+
+    `features` is PreyNet's (n, 640) output; the browser (onnx `features`) must match this.
+    The caller applies the rule: fired = p >= threshold; risk = max(base risk, p) when fired.
+    """
     if manifest.get("feature_dim") != FEATURE_DIM:
         raise ValueError(f"chloroplast feature_dim must be {FEATURE_DIM}")
     h, w = int(manifest["hidden_dim"]), manifest["weights"]
@@ -141,7 +145,7 @@ class Model:
             for cp in chloroplasts or []:
                 try:
                     cp_id, threshold = str(cp["id"]), float(cp["threshold"])
-                    p = chloroplast_probs(cp, out["features"])
+                    p = apply_chloroplast(cp, out["features"])
                     if not torch.isfinite(p).all():
                         raise ValueError("non-finite output")
                 except (AttributeError, KeyError, TypeError, ValueError) as exc:
