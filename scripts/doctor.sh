@@ -55,10 +55,10 @@ if [ "$member" = "B" ]; then
   else
     bad "Nemotron not configured in api/.env" "follow 'ss only: Nemotron on Brev' in docs/PROMPTS.md (or paste a build.nvidia.com nvapi- key)"
   fi
-  has cloudflared && ok "cloudflared (needed on the demo laptop)" || bad "cloudflared missing" "brew install cloudflared   (or download from https://github.com/cloudflare/cloudflared/releases)"
 fi
 
-if [ "$member" = "C" ]; then
+# B hosts the demo (make bridge) and C builds the bridge: both need Photon keys
+if [ "$member" = "B" ] || [ "$member" = "C" ]; then
   if grep -qE '^PHOTON_PROJECT_ID=.+' bridge/.env 2>/dev/null && grep -qE '^PHOTON_SECRET=.+' bridge/.env 2>/dev/null; then ok "Photon keys are in bridge/.env"
   else bad "Photon keys missing from bridge/.env" "app.photon.codes → your project → copy Project ID and Secret; then: cp .env.example bridge/.env and fill PHOTON_PROJECT_ID= and PHOTON_SECRET="; fi
   has cloudflared && ok "cloudflared" || bad "cloudflared missing" "brew install cloudflared   (or download from https://github.com/cloudflare/cloudflared/releases)"

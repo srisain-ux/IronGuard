@@ -249,7 +249,7 @@ Claude effort: set it in `/model` (or in the T3 Code thread settings). Codex eff
 1. **(0:00) The gap, 20 s.** "Filters ask *is this message a scam*. By the time the link arrives, the victim is hooked. We forecast where the conversation is going."
 2. **(0:20) Photon live, 50 s.** A judge forwards turn 2 of a "wrong number" thread from their own phone → the reply shows family, `~2 turns to strike`, an honest band, why, and reply codes. They reply `2` → the official number comes back.
 3. **(1:10) The model, 50 s.** The Reef Lab's **lead-time chart** (PreyNet vs per-message filters) and the **reliability diagram**. One sentence on the dragonfly mapping (internal model, lock-on attention, population-vector compass).
-4. **(2:00) Zero-day live, 45 s.** A judge types a new scam → Algae streams → chloroplast `82 KB · 4.8 s` → the browser phone flags it; flip to DevTools → Network: **no message text left the device.**
+4. **(2:00) Zero-day live, 45 s.** A judge types a new scam → Algae streams → chloroplast `82 KB · trained in ~1 s` → the browser phone flags it. Measured 2026-11-08: generating 120 + 120 conversations took **448 s**, so start a job before going on stage and show its result, or narrate over the stream. Never say the whole loop takes seconds; flip to DevTools → Network: **no message text left the device.**
 5. **(2:45) Close, 15 s.** "Protected before, during and after. Built on Nemotron. Reachable from any phone through Photon."
 
 **Backups:** a pre-recorded video of the full demo on 2 laptops; a pre-trained demo chloroplast in `api/store/chloroplasts/` in case Nemotron is slow.

@@ -36,7 +36,7 @@ export function LocalMessage({ manifests }: { manifests: ChloroplastManifest[] }
     event.preventDefault(); if (busy || !text.trim()) return;
     setBusy(true); setScore(null);
     try { const result = await scoreLocal([{ sender: "them", text }], manifests, setStatus); setScore(result.at(-1)!); setStatus(useMocks ? "Contract fixture · model inference pending" : "Scored on this device"); }
-    catch { setStatus("Browser model unavailable. Install A’s exported artifacts, then retry."); }
+    catch { setStatus("Browser model unavailable. First use needs internet for MiniLM and installed PreyNet artifacts. No text was uploaded."); }
     finally { setBusy(false); }
   }
   return <section className="zd-panel runtime-tools"><form onSubmit={event => void submit(event)}><label htmlFor="local-message">Message to score locally</label><textarea id="local-message" value={text} onChange={event => setText(event.target.value)} maxLength={1000} rows={3} placeholder="Type a test message" /><button disabled={busy || !text.trim()}>Score on this device</button></form><p role="status">{status}</p>{score && <p>Risk {score.risk.toFixed(4)} · {score.confidence_band.toUpperCase()} · {score.family.label}</p>}<small>Text stays in memory. No API scoring request is made.</small></section>;

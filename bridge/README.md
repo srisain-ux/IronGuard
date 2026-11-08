@@ -4,7 +4,7 @@ Forward text to the Photon number to get an IronGuard trajectory and safety card
 
 `MOCK_API=1` uses the shared score and safety-card examples and requires no API; reports are simulated in that mode. With `MOCK_API=0`, set `IRONGUARD_API_URL` (default `http://localhost:8000`); the bridge calls `/v1/score`, then `/v1/agent/safety-card` when risk is at least 0.35. It also sends a fully masked preview to `/v1/events/publish`. That event is optional and never contains forwarded text. The stub API returns demo forecasts and an unverified demo card; its replies are not real model or contact verification.
 
-Node 20.6+ loads `bridge/.env` through the dev script's `--env-file=.env`. Node 20 also needs a release that supports `--import` (20.6+). Use the repo's fixed port 8787.
+Node 20.12+ loads an optional `bridge/.env` at startup; exported environment variables take precedence. Without a file or credentials, the bridge still starts on port 8787 and `/health` reports `needs_credentials`. It does not accept Photon traffic until configured. Other environment-file errors fail startup.
 
 1. Open Terminal tab 1 in this checkout and run `make api-stub`.
 2. Open Terminal tab 2 in this checkout and run `make bridge`. Wait for **Photon ready**.

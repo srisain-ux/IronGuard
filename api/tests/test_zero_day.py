@@ -130,6 +130,9 @@ def test_parse_plan_rejects_bad_axes_and_ids():
     assert family.startswith("zd_") and label == "alert" and axes["pretext"] == ["v"]
     with pytest.raises(pipeline.JobError):
         pipeline.parse_plan({"axes": {"pretext": ["a"]}}, "alert")
+    # an echoed "..." placeholder falls back to the alert
+    family, label, _ = pipeline.parse_plan({"family_id": "...", "label": "...", "axes": {a: ["v"] for a in pipeline.AXES}}, "alert")
+    assert family.startswith("zd_") and label == "alert"
 
 
 def test_reef_report_persisted_scrubbed(client, app):
