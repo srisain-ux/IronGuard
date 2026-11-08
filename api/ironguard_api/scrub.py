@@ -2,19 +2,29 @@
 
 import re
 
+from .directory import load_directory
+
 NAMES = ("Anna", "Alice", "Bob", "John", "Jane", "Sarah", "David", "Michael", "Mary")
-BRANDS = ("PNC", "T-Mobile", "Chase", "Wells Fargo", "Bank of America", "UTD")
 
 
 def scrub(text: str) -> str:
+    """Mask known patterns and demo names/brands; not general PII recognition."""
+    brands = [
+        name for entry in load_directory()["brands"] for name in [entry["brand"], *entry["aliases"]]
+    ]
     patterns = [
-        (r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", "[EMAIL]"),
-        (r"(?:https?://|www\.)[^\s<>]+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(?:/[^\s<>]*)?", "[URL]"),
+        (r"[\w.+-]+@[\w.-]+\.[^\W\d_]{2,}", "[EMAIL]"),
+        (r"(?<!\w)@[\w.-]+", "[NAME]"),
+        (r"(?:https?://|www\.)[^\s<>]+|\b(?:[\w-]+\.)+[^\W\d_]{2,}(?:/[^\s<>]*)?", "[URL]"),
         (r"(?:[$€£]\s*\d[\d,.]*|\b\d[\d,.]*\s*(?:USD|dollars|EUR)\b)", "[AMOUNT]"),
         (r"(?<!\w)\+?\d[\d ().-]{5,}\d(?!\w)", "[PHONE]"),
-        (r"(?<!\w)@[\w.]+", "[NAME]"),
         (r"\b(?:" + "|".join(map(re.escape, NAMES)) + r")\b", "[NAME]"),
-        (r"\b(?:" + "|".join(map(re.escape, BRANDS)) + r")\b", "[BRAND]"),
+        (
+            r"(?<!\w)(?:"
+            + "|".join(map(re.escape, sorted(brands, key=len, reverse=True)))
+            + r")(?!\w)",
+            "[BRAND]",
+        ),
     ]
     for pattern, placeholder in patterns:
         text = re.sub(pattern, placeholder, text, flags=re.IGNORECASE)
