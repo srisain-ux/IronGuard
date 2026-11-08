@@ -1,8 +1,10 @@
-"""Zero-day job and reef persistence: fake Nemotron, real stub trainer, real SSE bus."""
+"""Zero-day job and reef persistence: fake Nemotron, contract-checked trainer, real SSE bus."""
 
 import asyncio
+import hashlib
 import itertools
 import json
+from functools import partial
 
 import pytest
 
@@ -42,7 +44,37 @@ def events(app, monkeypatch):
     app.state.events.subscribers.clear()
 
 
-def test_job_end_to_end(client, app, events, monkeypatch):
+@pytest.mark.parametrize("real_trainer", [False, True])
+def test_job_end_to_end(client, app, events, monkeypatch, real_trainer):
+    from ironguard_ml.stub import train
+
+    if real_trainer:
+        np = pytest.importorskip("numpy")
+        torch = pytest.importorskip("torch")
+        chloroplast = pytest.importorskip("ironguard_ml.chloroplast")
+        from ironguard_ml.data import _parse
+        from ironguard_ml.preynet import PreyNet
+
+        def encoder(texts):
+            return np.stack([np.random.default_rng(int(hashlib.sha256(t.encode()).hexdigest()[:8], 16))
+                             .normal(size=384) for t in texts])
+
+        with torch.random.fork_rng():
+            torch.manual_seed(0)
+            net = PreyNet().eval()
+        pool = [_parse({**conv(True), "id": f"bank_{i}", "family": "benign", "strike_turn": None,
+                        "source": {"generator": "nemotron"}}, "bank") for i in range(30)]
+        base = chloroplast.Base(net, *chloroplast.conversation_features(net, pool, encoder), encoder=encoder)
+        train = partial(chloroplast.train, base=base)
+
+    def checked_train(**kwargs):
+        records = kwargs["pos"] + kwargs["neg"]
+        for record in records:
+            validator("conversation").validate(record)
+        assert len({record["id"] for record in records}) == len(records)
+        return train(**kwargs)
+
+    monkeypatch.setattr(pipeline, "trainer", lambda: checked_train)
     monkeypatch.setattr(nemotron, "chat_json", fake_chat_json)
     response = client.post("/v1/zero-day", json={"alert": "Fake parking boot fee", "n_pos": 10, "n_neg": 10})
     assert response.status_code == 202 and response.json()["status"] == "queued"

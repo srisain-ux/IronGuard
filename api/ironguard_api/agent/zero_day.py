@@ -176,11 +176,14 @@ class Job:
     def add(self, hard: bool, conv: dict, score: dict | None) -> None:
         if not accepted(score) or len(self.kept[hard]) >= self.quota[hard]:
             return
-        rec = {"family": "benign" if hard else self.family, "hard_negative": hard,
+        rec = {"id": f"{self.family}_{uuid4().hex}",
+               "family": "benign" if hard else self.family, "hard_negative": hard,
                "channel": conv.get("channel") if conv.get("channel") in TAXONOMY["channels"] else "sms",
                "turns": [{"sender": t["sender"], "text": t["text"].strip(), "stage": t["stage"]}
                          for t in conv["turns"]],
-               "strike_turn": None if hard else next(i for i, t in enumerate(conv["turns"]) if t["stage"] == "strike")}
+               "strike_turn": None if hard else next(i for i, t in enumerate(conv["turns"]) if t["stage"] == "strike"),
+               "source": {"generator": "nemotron", "model": self.gen_model,
+                          "prompt_id": "zero_day"}}
         fp = shingles(rec)
         if any(cosine(fp, other) > DEDUPE_COS for other in self.seen[hard]):
             return
