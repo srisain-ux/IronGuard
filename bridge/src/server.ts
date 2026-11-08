@@ -2,9 +2,8 @@ import { createServer, type IncomingMessage } from "node:http";
 import { createHash } from "node:crypto";
 import {
   text,
-  type Message,
-  type Space,
-  type SpectrumInstance,
+  type WebhookRawRequest,
+  type WebhookRawResult,
 } from "spectrum-ts";
 
 export const ONLINE = "IronGuard online 🛡";
@@ -14,16 +13,38 @@ export type BridgeStatus =
   | "connecting"
   | "ready"
   | "connection_failed";
-type EchoMessage = Pick<Message, "id" | "direction" | "content">;
-type EchoSpace = Pick<Space, "id" | "send">;
+export type EchoMessage = {
+  id: string;
+  direction: "inbound" | "outbound";
+  content: { type: string; text?: string };
+};
+export type EchoSpace = {
+  id: string;
+  send(input: ReturnType<typeof text>): Promise<unknown>;
+};
+export type WebhookTransport = {
+  signatureHeaders?: string[];
+  webhook(
+    request: WebhookRawRequest,
+    handler: (space: EchoSpace, message: EchoMessage) => void,
+  ): Promise<WebhookRawResult>;
+  stop?(): Promise<void>;
+};
 
 // Hashes only, in memory, bounded and expired after 30 minutes. No thread text is retained.
-export function echoHandler(sendFailed: () => void = () => {}) {
+export function echoHandler(
+  sendFailed: () => void = () => {},
+  replyAccepted: () => void = () => {},
+) {
   const seen = new Map<string, number>();
   return async (space: EchoSpace, message: EchoMessage) => {
     if (message.direction !== "inbound") return;
     const content = message.content;
-    if (content.type === "text" && !/[\p{L}\p{N}]/u.test(content.text)) return;
+    if (
+      content.type === "text" &&
+      (typeof content.text !== "string" || !/[\p{L}\p{N}]/u.test(content.text))
+    )
+      return;
     const now = Date.now();
     for (const [key, at] of seen) if (now - at > 30 * 60_000) seen.delete(key);
     const digest = createHash("sha256")
@@ -38,6 +59,7 @@ export function echoHandler(sendFailed: () => void = () => {}) {
           content.type === "text" ? ONLINE : "I can only read text right now.",
         ),
       );
+      replyAccepted();
     } catch {
       seen.delete(digest);
       sendFailed();
@@ -58,8 +80,9 @@ async function readBody(request: IncomingMessage) {
 
 export function bridgeServer(state: {
   status: () => BridgeStatus;
-  sdk: () => Pick<SpectrumInstance, "webhook"> | undefined;
+  sdk: () => WebhookTransport | undefined;
   onMessage: ReturnType<typeof echoHandler>;
+  diagnostics?: () => Record<string, string | number>;
 }) {
   return createServer(async (request, response) => {
     if (
@@ -75,6 +98,7 @@ export function bridgeServer(state: {
           status: state.status(),
           mode: "echo",
           webhook: "/webhook",
+          ...state.diagnostics?.(),
         }),
       );
       return;
@@ -95,10 +119,10 @@ export function bridgeServer(state: {
         );
       return;
     }
-    if (
-      !request.headers["x-spectrum-signature"] ||
-      !request.headers["x-spectrum-timestamp"]
-    ) {
+    const requiredHeaders = Array.isArray(sdk.signatureHeaders)
+      ? sdk.signatureHeaders
+      : ["x-spectrum-signature", "x-spectrum-timestamp"];
+    if (requiredHeaders.some((name) => !request.headers[name])) {
       response.writeHead(401).end("Signed Photon webhook required.");
       return;
     }
@@ -107,23 +131,7 @@ export function bridgeServer(state: {
       const headers: Record<string, string> = {};
       for (const [name, value] of Object.entries(request.headers))
         if (typeof value === "string") headers[name] = value;
-      // Native Photon/Spectrum JSON only. SDK checks HMAC + freshness using exact request bytes.
-      let payload: unknown;
-      try {
-        payload = JSON.parse(body.toString("utf8"));
-      } catch {
-        response.writeHead(400).end("JSON webhook required.");
-        return;
-      }
-      if (
-        !payload ||
-        typeof payload !== "object" ||
-        !("message" in payload) ||
-        !("event" in payload)
-      ) {
-        response.writeHead(400).end("Native Photon webhook required.");
-        return;
-      }
+      // Each transport verifies its own signature format over the exact bytes.
       const result = await sdk.webhook({ body, headers }, (space, message) => {
         // Queue after acknowledgment. Sender and text never enter application logs.
         setImmediate(() => {
